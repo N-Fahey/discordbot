@@ -4,5 +4,8 @@
 #ignore txt files
 *.txt
 
+#ignore log files
+*.log
+
 #ignore pycache shit
 __pycache__/
