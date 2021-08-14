@@ -188,7 +188,7 @@ class connect4_game(commands.Cog):
         board = self.bot.game.formatBoard()
         if result == "Draw":
             await self.bot.game.msg.channel.send(f"Game was a draw! No more spaces available.")
-            await self.bot.dispatch("log"f"connect4: Game between {self.bot.gamePlayers[0]} and {self.bot.gamePlayers[1]} was a draw.")
+            self.bot.dispatch("log"f"connect4: Game between {self.bot.gamePlayers[0]} and {self.bot.gamePlayers[1]} was a draw.")
         else:
             self.bot.dispatch("queryAddWin",[(self.bot.gameStatus[1],result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
