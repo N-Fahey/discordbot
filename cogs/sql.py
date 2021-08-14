@@ -177,6 +177,7 @@ class sql(commands.Cog):
                 else:
                     allow = False
 
+                self.bot.dispatch("log",f"mysql:queryCheckDole succeeded. Query passed with values: {qData}")
                 return {
                     "balance":res[0],
                     "allow":allow

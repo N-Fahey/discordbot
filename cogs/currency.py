@@ -13,6 +13,7 @@ class currency(commands.Cog):
     #        COMMANDS       #
     #########################
 
+    #Claim the dole
     @commands.command(name="dole",help="Claim your daily handout. Only available to povos.")
     async def dole(self,ctx):
         sqlCog = self.bot.get_cog("sql")
@@ -28,17 +29,26 @@ class currency(commands.Cog):
         
         await ctx.send(reply)
 
+    #Transfer
     @commands.command(name="transfer",help="Usage: /transfer {@user} {amount}. Transfer money to the specified user.")
     async def transfer(self,ctx,target:Member = None,amount:int = 0):
         if target is not None and amount > 0:
             sqlCog = self.bot.get_cog("sql")
             if await sqlCog.queryTransfer([(amount,ctx.author.id,target.id)]):
-                reply = f"Succesfully sent {amount} to {target.display_name}"
+                reply = f"Succesfully sent {self.bot.currencyCode}{amount} to {target.display_name}."
             else:
                 reply = f"You don't have enough money to do that!"
         else:
             reply = "Transfer failed. Make sure you /transfer {@user} {amount}. Amount must be greater than zero!"
         await ctx.send(reply)
+    
+    #Check balance
+    @commands.command(name="balance",help="Check your bank balance!")
+    async def balance(self,ctx):
+        sqlCog = self.bot.get_cog("sql")
+        bal = await sqlCog.queryCheckBalance((ctx.author.id,))
+        
+        await ctx.send(f"{ctx.author.display_name}, your balance is {self.bot.currencyCode}{bal}")
             
 def setup(bot):
     bot.add_cog(currency(bot))

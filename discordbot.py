@@ -25,6 +25,7 @@ bot.prettyGames = {
 }
 bot.emojiDict = {}
 bot.lobbyTimeout = 300 #Set lobby timeout, in seconds
+bot.currencyCode = "߾"
 bot.vc = None
 
 #Load cogs
