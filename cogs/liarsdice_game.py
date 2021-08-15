@@ -119,16 +119,16 @@ class liarsdice_game(commands.Cog):
     @commands.command(name="liarsdice", help="Start a game of Liar's Dice\nThe lobby will close automatically after 5 minutes.")
     async def liarsdice(self, ctx):
         #If lobby or running game, stop
-        if self.bot.gameStatus[0] == "lobby":
+        if self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,f"A lobby is already open. !join to enter the lobby.")
             return
-        if self.bot.gameStatus[0] == "active":
+        if self.bot.game_state.in_game:
             self.bot.dispatch("sendReply",ctx,f"A game is already running. Wait until it's finished to start another.")
             return
 
-        if self.bot.gameStatus[0] == "inactive":
-            self.bot.gameStatus[0] = "lobby"
-            self.bot.gameStatus[1] = "liarsdice"
+        if not self.bot.game_state.in_game:
+            self.bot.game_state.in_lobby = True
+            self.bot.game_state.game_type = "liarsdice"
             self.bot.gamePlayers.append(ctx.author)
             dicePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
@@ -140,7 +140,7 @@ class liarsdice_game(commands.Cog):
     #bet
     @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
     async def bet(self, ctx, qty:int, face:int):
-        if self.bot.gameStatus[0] != "active" or self.bot.gameStatus[1] != "liarsdice":
+        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
@@ -164,7 +164,7 @@ class liarsdice_game(commands.Cog):
     #liar
     @commands.command(name="liar", help="Call the last better a liar in Liar's Dice.")
     async def liar(self,ctx):
-        if self.bot.gameStatus[0] != "active" or self.bot.gameStatus[1] != "liarsdice":
+        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
@@ -197,10 +197,10 @@ class liarsdice_game(commands.Cog):
             self.bot.dispatch("messageHands")
             self.bot.dispatch("sendReply",ctx,f"Round {self.bot.game.round}: {self.bot.game.better.mention}, your turn to bet.")
         else:
-            self.bot.dispatch("queryAddWin",[(self.bot.gameStatus[1],self.bot.game.players[0].id)])
+            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game.players[0].id)])
             self.bot.dispatch("sendReply",ctx,f"Game is over. {self.bot.game.players[0].mention} is the winner!")
             self.bot.gamePlayers = []
-            self.bot.gameStatus = ["inactive", ""] 
+            self.bot.game_state.end_game()
             self.bot.game = None
 
     #########################
