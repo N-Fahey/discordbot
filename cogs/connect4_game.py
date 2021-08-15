@@ -136,7 +136,7 @@ class connect4_game(commands.Cog):
     async def connect4(self,ctx):
         #If lobby or running game, stop
         if self.bot.gameStatus[0] == "lobby":
-            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby is already open. /join to enter the lobby.")
+            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby is already open. !join to enter the lobby.")
             return
         if self.bot.gameStatus[0] == "active":
             self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.gameStatus[1]]} game is already running. Wait until it's finished to start another.")
@@ -148,7 +148,7 @@ class connect4_game(commands.Cog):
             self.bot.gamePlayers.append(ctx.author)
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created connect4 lobby.")
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Connect 4! /join to enter the lobby! Currently waiting: {ctx.author.display_name}")
+            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Connect 4. !join to enter the lobby. Currently waiting: {ctx.author.display_name}")
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start connect4")
     

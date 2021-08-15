@@ -10,7 +10,7 @@ class general(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
 
-    @commands.command(name="roll", help="Roll a random number between 1 & 100\nChange the maximum number with /roll max.\nChange both minimum & maximum numbers with /roll min max.")
+    @commands.command(name="roll", help="Roll a random number between 1 & 100\nChange the maximum number with !roll max.\nChange both minimum & maximum numbers with !roll min max.")
     async def roll(self,ctx, range_opt1:int = 100, range_opt2:int = None):
 
         if range_opt2:
@@ -21,7 +21,7 @@ class general(commands.Cog):
             max = range_opt1
         self.bot.dispatch("sendReply",ctx,f"Rolling ({min}-{max}): {randint(min,max)}")
     
-    @commands.command(name="bigemoji",help="Sends the given emoji in original size. Usage: /bigemoji :emoji:")
+    @commands.command(name="bigemoji",help="Sends the given emoji in original size. Usage: !bigemoji :emoji:")
     async def bigemoji(self,ctx,emoji):
         if emoji in self.bot.emojiDict:
             id = self.bot.emojiDict[emoji].split(":")[2][:-1]

@@ -120,7 +120,7 @@ class liarsdice_game(commands.Cog):
     async def liarsdice(self, ctx):
         #If lobby or running game, stop
         if self.bot.gameStatus[0] == "lobby":
-            self.bot.dispatch("sendReply",ctx,f"A lobby is already open! /join to enter the lobby.")
+            self.bot.dispatch("sendReply",ctx,f"A lobby is already open. !join to enter the lobby.")
             return
         if self.bot.gameStatus[0] == "active":
             self.bot.dispatch("sendReply",ctx,f"A game is already running. Wait until it's finished to start another.")
@@ -133,12 +133,12 @@ class liarsdice_game(commands.Cog):
             dicePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created liarsdice lobby.")
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Liar's Dice! /join to enter the lobby! Currently waiting: {','.join(dicePlayersPretty)}")
+            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Liar's Dice. !join to enter the lobby. Currently waiting: {','.join(dicePlayersPretty)}")
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start liarsdice")
 
     #bet
-    @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: /bet {face} {quantity}")
+    @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
     async def bet(self, ctx, qty:int, face:int):
         if self.bot.gameStatus[0] != "active" or self.bot.gameStatus[1] != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
@@ -155,7 +155,7 @@ class liarsdice_game(commands.Cog):
                 emoji = f"d{face}"
                 reply = f"{ctx.author.display_name} placed bet of {qty} x {self.bot.emojiDict[emoji]}. {self.bot.game.better.mention}, your turn to bet."
             else:
-                reply = f"{ctx.author.display_name}, you can't make that bet. Try again. Use /bet [quantity] [face]"
+                reply = f"{ctx.author.display_name}, you can't make that bet. Try again. Use !bet [quantity] [face]"
         else:
             reply = "Bet invalid."
 
@@ -210,7 +210,7 @@ class liarsdice_game(commands.Cog):
     @bet.error
     async def bet_error(self,ctx,error):
         if isinstance(error,MissingRequiredArgument):
-            await ctx.send("Missing required argument. You need to /bet {face} {quantity}")
+            await ctx.send("Missing required argument. You need to !bet {face} {quantity}")
 
     @commands.Cog.listener()
     async def on_messageHands(self):

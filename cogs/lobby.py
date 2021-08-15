@@ -20,7 +20,7 @@ class lobby(commands.Cog):
     async def join(self,ctx):
         #If no lobby
         if self.bot.gameStatus[0] == "inactive":
-            self.bot.dispatch("sendReply",ctx,"No lobby currently active. /liarsdice or /connect4 to start one.")
+            self.bot.dispatch("sendReply",ctx,"No lobby currently active. !liarsdice or !connect4 to start one.")
             return
         if self.bot.gameStatus[0] == "active":
             self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.gameStatus[1]]} is already running.")
@@ -28,7 +28,7 @@ class lobby(commands.Cog):
 
         if self.bot.gameStatus[0] == "lobby":
             if ctx.author in self.bot.gamePlayers:
-                reply = f"{ctx.author.display_name}, you're already in the lobby!"
+                reply = f"{ctx.author.display_name}, you're already in the lobby."
             elif self.bot.gameStatus[1] == "connect4" and len(self.bot.gamePlayers) > 1: #Connect 4 exceptions
                 reply = f"Sorry {ctx.author.display_name}, Connect 4 only supports 2 players."
             else:
@@ -39,7 +39,7 @@ class lobby(commands.Cog):
                     ctx.author = self.bot.gamePlayers[0]
                     await self.start(ctx)
                     return
-                reply = f"{ctx.author.display_name} joined the {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby! Currently waiting: {', '.join(gamePlayersPretty)}"
+                reply = f"{ctx.author.display_name} joined the {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
             self.bot.dispatch("sendReply",ctx,reply)
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start liarsdice")

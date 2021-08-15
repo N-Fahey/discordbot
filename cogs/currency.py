@@ -30,7 +30,7 @@ class currency(commands.Cog):
         await ctx.send(reply)
 
     #Transfer
-    @commands.command(name="transfer",help="Usage: /transfer {@user} {amount}. Transfer money to the specified user.")
+    @commands.command(name="transfer",help="Usage: !transfer {@user} {amount}. Transfer money to the specified user.")
     async def transfer(self,ctx,target:Member = None,amount:int = 0):
         if target is not None and amount > 0:
             sqlCog = self.bot.get_cog("sql")
@@ -39,7 +39,7 @@ class currency(commands.Cog):
             else:
                 reply = f"You don't have enough money to do that!"
         else:
-            reply = "Transfer failed. Make sure you /transfer {@user} {amount}. Amount must be greater than zero!"
+            reply = "Transfer failed. Make sure you !transfer {@user} {amount}. Amount must be greater than zero!"
         await ctx.send(reply)
     
     #Check balance
