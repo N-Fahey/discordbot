@@ -9,3 +9,6 @@
 
 #ignore pycache shit
 __pycache__/
+
+# sql database ignore
+*.sql
