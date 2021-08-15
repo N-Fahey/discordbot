@@ -1,6 +1,7 @@
 from discord.ext import commands
 from discord.ext.commands.errors import MissingPermissions
 from cogs.liarsdice_game import LiarsDice
+from cogs.russianroulette_game import RussianRoulette
 from cogs.connect4_game import connect4
 
 #########################
@@ -68,6 +69,23 @@ class lobby(commands.Cog):
                 reply = f"Starting Liar's Dice! {self.bot.game.better.mention}, place your bet."
             else:
                 reply = "Can't start Liar's Dice with one player. Wait for someone else to join the lobby."
+
+
+        #Russian Roulette lobby handling
+        if self.bot.game_state.game_type == "russianroulette":
+            if len(self.bot.gamePlayers) > 1:
+                self.bot.game = RussianRoulette(self.bot.gamePlayers)
+                self.bot.game_state.in_lobby = False
+                self.bot.game_state.in_game = True
+                self.bot.timer.clear()
+                self.bot.dispatch("log",f"russianroulette: game started by {ctx.author} with players:{','.join(i.name for i in self.bot.gamePlayers[1:])}")
+                reply = f"😐 🔫 Starting Russian Roulette! `{self.bot.game.players[self.bot.game.current_player].display_name}` has the weapon"
+            else:
+                reply = "Russian roulette player count must be between 1 and 6 players"
+
+
+
+
 
         #Connect 4 lobby handling
         elif self.bot.game_state.game_type == "connect4":
