@@ -2,6 +2,17 @@ import os,discord
 from discord.ext import commands,timers
 from dotenv import load_dotenv
 
+class game_state():
+    def __init__(self):
+        self.in_lobby = False # In Lobby
+        self.in_game = False # In Game
+        self.game_type = None # Game type usually a string 
+    
+    def end_game(self):
+        self.in_lobby = False
+        self.in_game = False
+        self.game_type = None
+
 #Get required environment variables
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -12,19 +23,14 @@ intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
 
-
 #Setup attributes
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
-bot.timer = timers.TimerManager(bot)
-bot.game = None
-bot.game_state  = {
-    in_lobby: False # In Lobby
-    in_game  : False # In Game
-    game_type: None # Game type usually a string 
-}
-bot.gamePlayers = []
-bot.emojiDict = {}
-bot.vc = None
+self = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
+self.timer = timers.TimerManager(self)
+self.game = None
+self.game_state = game_state()
+self.gamePlayers = []
+self.emojiDict = {}
+self.vc = None
 
 #Load cogs
 cogs = []
@@ -32,40 +38,40 @@ cogs = []
 if __name__ == "__main__":
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            bot.load_extension(f"cogs.{file}"[:-3])
+            self.load_extension(f"cogs.{file}"[:-3])
             cogs.append(file[:-3])
 
 #Setup event, triggers on login & refresh
-@bot.event
+@self.event
 async def on_ready():
-    bot.dispatch("log",f"Loaded extensions: {', '.join(cogs)}")
-    bot.emojiDict = {e.name:str(e) for e in bot.emojis}
+    self.dispatch("log",f"Loaded extensions: {', '.join(cogs)}")
+    self.emojiDict = {e.name:str(e) for e in self.emojis}
 
     #Load settings
-    sqlCog = bot.get_cog('sql')
+    sqlCog = self.get_cog('sql')
     settings = await sqlCog.queryRetrieveSettings()
     if isinstance(settings,dict):
         for setting in settings:
-            setattr(bot,setting,settings[setting])
-        bot.dispatch("log",f"Succesfully loaded settings: {settings.keys()}")
+            setattr(self,setting,settings[setting])
+        self.dispatch("log",f"Succesfully loaded settings: {settings.keys()}")
     else:
         raise ConnectionError(f"Failed to load settings: {settings}")
 
-    guild = discord.utils.find(lambda g: g.id == int(GUILD), bot.guilds)
-    bot.dispatch("log",f"{bot.user} now ready on guild: {guild.name}, guild ID: {guild.id}")
+    guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
+    self.dispatch("log",f"{self.user} now ready on guild: {guild.name}, guild ID: {guild.id}")
 
-@bot.event
+@self.event
 async def on_reload(ctx):
-    cogs = list(bot.extensions)
+    cogs = list(self.extensions)
     for cog in cogs:
-        bot.unload_extension(cog)
+        self.unload_extension(cog)
     cogs = []
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            bot.load_extension(f"cogs.{file}"[:-3])
+            self.load_extension(f"cogs.{file}"[:-3])
             cogs.append(file[:-3])
     
     await ctx.send(f"Reloaded extensions: {', '.join(cogs)}")
 
 #Initialise the bot
-bot.run(TOKEN)
+self.run(TOKEN)

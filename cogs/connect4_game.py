@@ -142,7 +142,7 @@ class connect4_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.game_state.game_type]} game is already running. Wait until it's finished to start another.")
             return
         
-        if not self.bot.game_state.in_lobby and not self.game_state.in_game:
+        if not self.bot.game_state.in_lobby and not self.bot.game_state.in_game:
             self.bot.game_state.in_lobby = True
             self.bot.game_state.game_type = "connect4"
             self.bot.gamePlayers.append(ctx.author)
@@ -196,10 +196,7 @@ class connect4_game(commands.Cog):
         await self.bot.game.msg.edit(content = board, embed = None)
         await self.bot.game.msg.clear_reactions()
         self.bot.gamePlayers = []
-        self.bot.game_state.game_type = None
-        self.bot.game_state.in_lobby = False
-        self.bot.game_state.in_game = False
-
+        self.bot.game_state.end_game()
         self.bot.game = None
 
     #Reaction listener (should only be active when game running)

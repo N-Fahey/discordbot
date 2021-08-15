@@ -10,12 +10,6 @@ from cogs.connect4_game import connect4
 class lobby(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-
-        self.bot.game_state  = {
-            in_lobby: False # In Lobby
-            in_game  : False # In Game
-            game_type: None # Game type usually a string 
-        }
     
     #########################
     #        COMMANDS       #
@@ -25,7 +19,7 @@ class lobby(commands.Cog):
     @commands.command(name="join",help="Join a currently open game lobby")
     async def join(self,ctx):
         #If no lobby
-        if not self.bot.game_state.in_game:
+        if not self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"No lobby currently active. !liarsdice or !connect4 to start one.")
             return
 
@@ -114,10 +108,7 @@ class lobby(commands.Cog):
                 return
 
 
-        self.bot.game_state.in_game = False
-        self.bot.game_state.in_lobby = False
-        self.bot.game_state.game_type = None
-
+        self.bot.game_state.end_game()
         self.bot.gamePlayers = []
         self.bot.dispatch("sendReply",ctx,reply)
 

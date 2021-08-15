@@ -126,9 +126,9 @@ class liarsdice_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"A game is already running. Wait until it's finished to start another.")
             return
 
-        if not self.bot.game_status.in_game:
-            self.bot.game_status.in_lobby = True
-            self.bot.game_status.game_type = "liarsdice"
+        if not self.bot.game_state.in_game:
+            self.bot.game_state.in_lobby = True
+            self.bot.game_state.game_type = "liarsdice"
             self.bot.gamePlayers.append(ctx.author)
             dicePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
@@ -140,7 +140,7 @@ class liarsdice_game(commands.Cog):
     #bet
     @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
     async def bet(self, ctx, qty:int, face:int):
-        if not self.bot.game_status.in_game or self.bot.game_status.game_type != "liarsdice":
+        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
@@ -164,7 +164,7 @@ class liarsdice_game(commands.Cog):
     #liar
     @commands.command(name="liar", help="Call the last better a liar in Liar's Dice.")
     async def liar(self,ctx):
-        if not self.bot.game_status.in_game or self.bot.game_status.game_type != "liarsdice":
+        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
@@ -200,9 +200,7 @@ class liarsdice_game(commands.Cog):
             self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game.players[0].id)])
             self.bot.dispatch("sendReply",ctx,f"Game is over. {self.bot.game.players[0].mention} is the winner!")
             self.bot.gamePlayers = []
-            self.bot.game_status.game_type = None
-            self.bot.game_status.game_state = False
-            self.bot.game_status.in_lobby = False
+            self.bot.game_state.end_game()
             self.bot.game = None
 
     #########################
