@@ -83,21 +83,26 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,reply)
     
     #kill_lobby
-    @commands.command(name="kill_lobby",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
-    @commands.has_permissions(manage_roles=True)
+    @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
     async def kill_lobby(self,ctx):
         if ctx.bot == True:
             reply = f"{self.bot.prettyGames[self.bot.gameStatus[1]]} lobby timed out."
             self.bot.dispatch("log",f"{self.bot.gameStatus[1]} lobby timed out.")
         else:
             if self.bot.gameStatus[0] == "lobby":
-                reply = f"{self.bot.prettyGames[self.bot.gameStatus[1]]} lobby closed."
-                self.bot.dispatch("log",f"lobby: {self.bot.gameStatus[1]} lobby killed by {ctx.author}.")
-                self.bot.timer.clear()
+                if ctx.author == self.bot.gamePlayers[0]:
+                    reply = f"{self.bot.prettyGames[self.bot.gameStatus[1]]} lobby closed."
+                    self.bot.dispatch("log",f"lobby: {self.bot.gameStatus[1]} lobby killed by {ctx.author}.")
+                    self.bot.timer.clear()
+                else:
+                    self.bot.dispatch("sendReply",ctx,"Only the user that created the lobby can end it!")
+                    return
+
 
             else:
                 reply = "No lobby active! Nothing to kill."
                 return
+
         self.bot.gameStatus = ["inactive",""]
         self.bot.gamePlayers = []
         self.bot.dispatch("sendReply",ctx,reply)
