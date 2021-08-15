@@ -174,6 +174,8 @@ class connect4_game(commands.Cog):
     async def on_updateBoard(self,action):
         if action == "Continue":
             embed = Embed()
+            names = [i.display_name for i in self.bot.game.players.values()]
+            embed.add_field(name='Players',value=f"{self.bot.game.emojis[1]}Player 1: {names[0]}\n{self.bot.game.emojis[2]}Player 2: {names[1]}")
             embed.add_field(name='Players turn',value=self.bot.game.players[self.bot.game.player].mention)
         elif action == "Full":
             embed = Embed()
