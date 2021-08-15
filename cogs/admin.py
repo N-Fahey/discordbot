@@ -75,11 +75,15 @@ class admin(commands.Cog):
     async def on_reset(self):
         self.bot.game = None
         self.bot.timer.clear()    
-        self.bot.gameStatus = ["inactive",""]
         self.bot.gamePlayers = []
         self.bot.emojiDict = {}
         self.bot.emojiDict = {e.name:str(e) for e in self.bot.emojis}
         self.bot.vc = None
+        self.bot.game_state  = {
+            in_lobby: False # In Lobby
+            in_game  : False # In Game
+            game_type: None # Game type usually a string 
+        }
         return True
 
 #########################

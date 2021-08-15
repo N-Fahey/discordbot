@@ -10,6 +10,12 @@ from cogs.connect4_game import connect4
 class lobby(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
+
+        self.bot.game_state  = {
+            in_lobby: False # In Lobby
+            in_game  : False # In Game
+            game_type: None # Game type usually a string 
+        }
     
     #########################
     #        COMMANDS       #
@@ -19,27 +25,28 @@ class lobby(commands.Cog):
     @commands.command(name="join",help="Join a currently open game lobby")
     async def join(self,ctx):
         #If no lobby
-        if self.bot.gameStatus[0] == "inactive":
+        if not self.bot.game_state.in_game:
             self.bot.dispatch("sendReply",ctx,"No lobby currently active. !liarsdice or !connect4 to start one.")
             return
-        if self.bot.gameStatus[0] == "active":
-            self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.gameStatus[1]]} is already running.")
+
+        if self.bot.game_state.in_game:
+            self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.game_state.game_type]} is already running.")
             return
 
-        if self.bot.gameStatus[0] == "lobby":
+        if self.bot.game_state.in_lobby:
             if ctx.author in self.bot.gamePlayers:
                 reply = f"{ctx.author.display_name}, you're already in the lobby."
-            elif self.bot.gameStatus[1] == "connect4" and len(self.bot.gamePlayers) > 1: #Connect 4 exceptions
+            elif self.bot.game_state.game_type == "connect4" and len(self.bot.gamePlayers) > 1: #Connect 4 exceptions
                 reply = f"Sorry {ctx.author.display_name}, Connect 4 only supports 2 players."
             else:
                 self.bot.gamePlayers.append(ctx.author)
                 gamePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
-                self.bot.dispatch("log",f"lobby: {ctx.author} joined {self.bot.gameStatus[1]} lobby")
-                if self.bot.gameStatus[1] == "connect4":
+                self.bot.dispatch("log",f"lobby: {ctx.author} joined {self.bot.game_state.game_type} lobby")
+                if self.bot.game_state.game_type == "connect4":
                     ctx.author = self.bot.gamePlayers[0]
                     await self.start(ctx)
                     return
-                reply = f"{ctx.author.display_name} joined the {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
+                reply = f"{ctx.author.display_name} joined the {self.bot.prettyGames[self.bot.game_state.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
             self.bot.dispatch("sendReply",ctx,reply)
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start liarsdice")
@@ -48,7 +55,7 @@ class lobby(commands.Cog):
     @commands.command(name="start",help="Start the currently open game lobby")
     async def start(self,ctx):
         #Check lobby is running & starter is lobby creator
-        if self.bot.gameStatus[0] != "lobby":
+        if not self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"No lobby to start.")
             return
         if ctx.author != self.bot.gamePlayers[0]:
@@ -56,21 +63,24 @@ class lobby(commands.Cog):
             return
 
         #Liar's Dice lobby handling
-        if self.bot.gameStatus[1] == "liarsdice":
+        if self.bot.game_state.game_type == "liarsdice":
             if len(self.bot.gamePlayers) > 1:
                 self.bot.game = LiarsDice(self.bot.gamePlayers)
-                self.bot.gameStatus[0] = "active"
+                self.bot.game_state.in_lobby = False
+                self.bot.game_state.in_game = True
                 self.bot.timer.clear()
                 self.bot.dispatch("log",f"liarsdice: game started by {ctx.author} with players:{','.join(i.name for i in self.bot.gamePlayers[1:])}")
                 self.bot.dispatch("messageHands")
                 reply = f"Starting Liar's Dice! {self.bot.game.better.mention}, place your bet."
             else:
                 reply = "Can't start Liar's Dice with one player. Wait for someone else to join the lobby."
+
         #Connect 4 lobby handling
-        elif self.bot.gameStatus[1] == "connect4":
+        elif self.bot.game_state.game_type == "connect4":
             if len(self.bot.gamePlayers) == 2:
                 self.bot.game = connect4(self.bot.gamePlayers)
-                self.bot.gameStatus[0] = "active"
+                self.bot.game_state.in_lobby = False
+                self.bot.game_state.in_game = True
                 self.bot.timer.clear()
                 self.bot.dispatch("log",f"connect4: game started by {ctx.author} with opponent: {','.join(i.name for i in self.bot.gamePlayers[1:])}")
                 self.bot.dispatch("publishBoard",ctx)
@@ -78,7 +88,7 @@ class lobby(commands.Cog):
             else:
                 reply = "2 players required to start Connect 4."
         else:
-            raise RuntimeError(f"Didn't recognise game:{self.bot.gameStatus[1]}. Does this game exist?")
+            raise RuntimeError(f"Didn't recognise game:{self.bot.game_state.game_type}. Does this game exist?")
         if reply is not None:
             self.bot.dispatch("sendReply",ctx,reply)
     
@@ -86,13 +96,13 @@ class lobby(commands.Cog):
     @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
     async def kill_lobby(self,ctx):
         if ctx.bot == True:
-            reply = f"{self.bot.prettyGames[self.bot.gameStatus[1]]} lobby timed out."
-            self.bot.dispatch("log",f"{self.bot.gameStatus[1]} lobby timed out.")
+            reply = f"{self.bot.prettyGames[self.bot.game_state.game_type]} lobby timed out."
+            self.bot.dispatch("log",f"{self.bot.game_state.game_type} lobby timed out.")
         else:
-            if self.bot.gameStatus[0] == "lobby":
+            if self.bot.game_state.in_lobby:
                 if ctx.author == self.bot.gamePlayers[0]:
-                    reply = f"{self.bot.prettyGames[self.bot.gameStatus[1]]} lobby closed."
-                    self.bot.dispatch("log",f"lobby: {self.bot.gameStatus[1]} lobby killed by {ctx.author}.")
+                    reply = f"{self.bot.prettyGames[self.bot.game_state.game_type]} lobby closed."
+                    self.bot.dispatch("log",f"lobby: {self.bot.game_state.game_type} lobby killed by {ctx.author}.")
                     self.bot.timer.clear()
                 else:
                     self.bot.dispatch("sendReply",ctx,"Only the user that created the lobby can end it!")
@@ -103,7 +113,11 @@ class lobby(commands.Cog):
                 reply = "No lobby active! Nothing to kill."
                 return
 
-        self.bot.gameStatus = ["inactive",""]
+
+        self.bot.game_state.in_game = False
+        self.bot.game_state.in_lobby = False
+        self.bot.game_state.game_type = None
+
         self.bot.gamePlayers = []
         self.bot.dispatch("sendReply",ctx,reply)
 

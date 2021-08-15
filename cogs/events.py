@@ -68,7 +68,8 @@ class events(commands.Cog):
         if user.bot:
             return
 
-        if self.bot.gameStatus == ["active","connect4"]:
+
+        if self.bot.game_state.in_game and self.bot.game_state.game_type == "connect4":
             self.bot.dispatch("connect4Reaction",user,reaction)
             return
 
@@ -81,7 +82,7 @@ class events(commands.Cog):
         if user.bot:
             return
 
-        if self.bot.gameStatus == ["active","connect4"]: #Just ignore this when the game's running
+        if self.bot.game_state.in_game and self.bot.game_state.game_type == "connect4":: #Just ignore this when the game's running
             return
 
         if user.id == 195114381820952577:

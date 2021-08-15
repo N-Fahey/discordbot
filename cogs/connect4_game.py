@@ -135,16 +135,16 @@ class connect4_game(commands.Cog):
     @commands.command("connect4", help="Start a game of Connect 4\nThe lobby will automatically close after 5 minutes")
     async def connect4(self,ctx):
         #If lobby or running game, stop
-        if self.bot.gameStatus[0] == "lobby":
-            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.gameStatus[1]]} lobby is already open. !join to enter the lobby.")
+        if self.bot.game_state.in_lobby:
+            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.game_state.game_type]} lobby is already open. !join to enter the lobby.")
             return
-        if self.bot.gameStatus[0] == "active":
-            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.gameStatus[1]]} game is already running. Wait until it's finished to start another.")
+        if self.bot.game_state.in_game:
+            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.game_state.game_type]} game is already running. Wait until it's finished to start another.")
             return
         
-        if self.bot.gameStatus[0] == "inactive":
-            self.bot.gameStatus[0] = "lobby"
-            self.bot.gameStatus[1] = "connect4"
+        if not self.bot.game_state.in_lobby and not self.game_state.in_game:
+            self.bot.game_state.in_lobby = True
+            self.bot.game_state.game_type = "connect4"
             self.bot.gamePlayers.append(ctx.author)
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created connect4 lobby.")
@@ -190,13 +190,16 @@ class connect4_game(commands.Cog):
             await self.bot.game.msg.channel.send(f"Game was a draw! No more spaces available.")
             self.bot.dispatch("log"f"connect4: Game between {self.bot.gamePlayers[0]} and {self.bot.gamePlayers[1]} was a draw.")
         else:
-            self.bot.dispatch("queryAddWin",[(self.bot.gameStatus[1],result.id)])
+            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type,result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
             await self.bot.game.msg.channel.send(f"Game over! {result.display_name} is the winner!")
         await self.bot.game.msg.edit(content = board, embed = None)
         await self.bot.game.msg.clear_reactions()
         self.bot.gamePlayers = []
-        self.bot.gameStatus = ["inactive", ""]
+        self.bot.game_state.game_type = None
+        self.bot.game_state.in_lobby = False
+        self.bot.game_state.in_game = False
+
         self.bot.game = None
 
     #Reaction listener (should only be active when game running)
