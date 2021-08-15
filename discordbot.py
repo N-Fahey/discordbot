@@ -17,7 +17,11 @@ intents.reactions = True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
 bot.timer = timers.TimerManager(bot)
 bot.game = None
-bot.gameStatus = ["inactive",""]
+bot.game_state  = {
+    in_lobby: False # In Lobby
+    in_game  : False # In Game
+    game_type: None # Game type usually a string 
+}
 bot.gamePlayers = []
 bot.emojiDict = {}
 bot.vc = None
