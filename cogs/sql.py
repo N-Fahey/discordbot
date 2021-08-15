@@ -75,6 +75,42 @@ class sql(commands.Cog):
     #var = self.bot.get_cog('cogname')
     #await var.function(args)
 
+    #Load settings. Return settings values, and games list
+    async def queryRetrieveSettings(self): #No need to pass any data here
+        conn = openConnection()
+        if conn.is_connected():
+            try:
+                cursor = conn.cursor()
+                q = """SELECT name,value,type FROM bot_settings"""
+                cursor.execute(q)
+                settingRes = cursor.fetchall() #Returns list of tuples
+                q = """SELECT name,pretty_name FROM bot_games"""
+                cursor.execute(q)
+                gameRes = cursor.fetchall()
+                cursor.close()
+                conn.close()
+            except:
+                raise
+
+            settings = {}
+            games = {}
+            #All setting values are TEXT in DB - so convert to whatever is needed and append to settings dict
+            for setting in settingRes:
+                if setting[2] == 'int':
+                    settings[setting[0]] = int(setting[1])
+                elif setting[2] == 'float':
+                    settings[setting[0]] = float(setting[1])
+                elif setting[2] == 'str':
+                    settings[setting[0]] = setting[1]
+            
+            for game in gameRes:
+                games[game[0]] = game[1]
+            
+            settings['prettyGames'] = games
+            return settings
+        else:
+            return "Connection failed to open"
+
     #Check bank & return value. Should mostly be used internally
     async def queryCheckBalance(self,qData): #qData expects (member.id,). Single pass only
         conn = openConnection()
@@ -155,7 +191,7 @@ class sql(commands.Cog):
                 self.bot.dispatch("log",f"mysql: queryPayDole succeeded. Query passed with values: {qData}")
             except:
                 raise
-            await self.queryPay([(100,qData[0][0])])
+            await self.queryPay([(self.bot.dolePayment,qData[0][0])]) #Tie dole payments to setting
 
     #Dole checker. This returns their dict of bank value, and allow/disallow dole claim {value,binary allowed/blocked}
     async def queryCheckDole(self,qData): #qData expects (member.id,)
@@ -172,7 +208,7 @@ class sql(commands.Cog):
                 cursor.close()
                 conn.close()
 
-                if res[1].total_seconds() > 86400 and res[0] < 1000: #Allow claim if been greater than 24h since last claim, and bank is under 1000
+                if res[1].total_seconds() > self.bot.doleTimeout and res[0] < self.bot.doleLimit:
                     allow = True
                 else:
                     allow = False

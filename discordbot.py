@@ -14,18 +14,12 @@ intents.reactions = True
 
 
 #Setup attributes
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("/"), intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
 bot.timer = timers.TimerManager(bot)
 bot.game = None
 bot.gameStatus = ["inactive",""]
 bot.gamePlayers = []
-bot.prettyGames = {
-    "liarsdice":"Liar's Dice",
-    "connect4":"Connect 4"
-}
 bot.emojiDict = {}
-bot.lobbyTimeout = 300 #Set lobby timeout, in seconds
-bot.currencyCode = "߾"
 bot.vc = None
 
 #Load cogs
@@ -42,6 +36,17 @@ if __name__ == "__main__":
 async def on_ready():
     bot.dispatch("log",f"Loaded extensions: {', '.join(cogs)}")
     bot.emojiDict = {e.name:str(e) for e in bot.emojis}
+
+    #Load settings
+    sqlCog = bot.get_cog('sql')
+    settings = await sqlCog.queryRetrieveSettings()
+    if isinstance(settings,dict):
+        for setting in settings:
+            setattr(bot,setting,settings[setting])
+        bot.dispatch("log",f"Succesfully loaded settings: {settings.keys()}")
+    else:
+        raise ConnectionError(f"Failed to load settings: {settings}")
+
     guild = discord.utils.find(lambda g: g.id == int(GUILD), bot.guilds)
     bot.dispatch("log",f"{bot.user} now ready on guild: {guild.name}, guild ID: {guild.id}")
 

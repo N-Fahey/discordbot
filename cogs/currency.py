@@ -21,8 +21,8 @@ class currency(commands.Cog):
         check = await sqlCog.queryCheckDole((authorId,))
         if check["allow"]:
             await sqlCog.queryPayDole([(authorId,)])
-            reply = f"Your handout has been processed. Balance is now ${check['balance']+100}."
-        elif check["balance"] >= 1000:
+            reply = f"Your handout has been processed. Balance is now ${check['balance']+self.bot.dolePayment}."
+        elif check["balance"] >= self.bot.doleLimit:
             reply = "You have too much money. Poors only"
         else:
             reply = "You already received your daily handout. Wait 24 hours."
