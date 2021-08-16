@@ -115,14 +115,14 @@ class events(commands.Cog):
     @commands.Cog.listener()
     async def on_sendReply(self,ctx,msg):
         await ctx.send(msg)
-        with open("replies.log","a") as logfile:
+        with open("replies.log","a",encoding="utf-8") as logfile:
             logfile.write(f"{datetime.datetime.now()} - {msg}\n")
 
     #Logging
     @commands.Cog.listener()
     async def on_log(self,msg):
         print(f"{datetime.datetime.now()} - {msg}")
-        with open("general.log","a") as logfile:
+        with open("general.log","a", encoding="utf-8") as logfile:
             logfile.write(f"{datetime.datetime.now()} - {msg}\n")
 
     #Error handling

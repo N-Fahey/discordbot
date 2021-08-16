@@ -52,7 +52,20 @@ class admin(commands.Cog):
             self.bot.dispatch("reload",ctx)
         except:
             await ctx.send("Error reloading extensions")  
+
+
+
+    #RELOAD
+    @commands.command(name="populatedb",help="Populate database")
+    @commands.has_permissions(administrator=True)
+    async def populatedb(self,ctx):
+        try:
+            self.bot.dispatch("populatedb",ctx)
+        except:
+            await ctx.send("Error populating db")  
     
+
+
     #Get Attribute
     @commands.command(name="gattr")
     @commands.has_permissions(administrator=True)

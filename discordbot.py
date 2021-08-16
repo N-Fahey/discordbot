@@ -50,6 +50,7 @@ async def on_ready():
     #Load settings
     sqlCog = self.get_cog('sql')
     settings = await sqlCog.queryRetrieveSettings()
+    await sqlCog.on_populatedb(None)
     if isinstance(settings,dict):
         for setting in settings:
             setattr(self,setting,settings[setting])
@@ -59,6 +60,8 @@ async def on_ready():
 
     guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
     self.dispatch("log",f"{self.user} now ready on guild: {guild.name}, guild ID: {guild.id}")
+    # populate database with users
+    
 
 @self.event
 async def on_reload(ctx):

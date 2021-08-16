@@ -2,16 +2,36 @@ import os,datetime
 from discord.ext import commands
 from mysql.connector import connect,Error
 from dotenv import load_dotenv
+import yaml
+from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData,BigInteger, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime,timedelta
 
-#General connector used in all events
-def openConnection():  
-    load_dotenv()
-    loginDetails = {"host":os.getenv("SQL_HOST"),"database":os.getenv("SQL_DB"),"user":os.getenv("SQL_USER"),"password":os.getenv("SQL_PW")}
-    try:
-        connection = connect(**loginDetails)
-        return connection
-    except Error as error:
-        raise error
+Base = declarative_base()
+load_dotenv()
+
+engine = create_engine(os.getenv("DB_CONNSTR"), echo = True)
+
+class BotUsers(Base):
+    __tablename__ = 'bot_users'
+    user_id = Column('user_id', BigInteger, primary_key=True)
+    name = Column('name', String(200))
+    display_name =  Column('display_name', String(200))
+    bank = Column('bank', BigInteger, default=100)
+    last_dole = Column('last_dole', DateTime)
+
+
+class BotScores(Base):
+    __tablename__ = 'bot_scores'
+    uid = Column('id', Integer, primary_key=True)
+    winner_id = Column('winner_id', BigInteger)
+    time = Column('time', DateTime)
+    game = Column('game', String(200))
+
+
+Base.metadata.create_all(engine)
+
 
 #########################
 #       Extension       #
@@ -30,42 +50,49 @@ class sql(commands.Cog):
     async def on_queryAddMember(self,qData): #qData expects [(member.id, member.name, member.display_name)]
         if not isinstance(qData, list) and not isinstance(qData[0], tuple):
             raise TypeError(f"Wrong type for qData. Expected List of Tuples, received outer: {type(qData)}, inner: {type(qData[0])}")
+        
+        try:
+            qData = qData[0]
+            Session = sessionmaker(bind=engine)
+            session = Session()
 
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """INSERT INTO bot_users (user_id,name,display_name)
-                    VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE name=VALUES(name), display_name=VALUES(display_name);
-                    """
-                cursor.executemany(q, qData)
-                conn.commit()
-                cursor.close()
-                conn.close()
-                self.bot.dispatch("log",f"mysql: queryAddMember succeeded. Query passed with values: {qData}")
-            except:
-                raise
-        else:
-            raise ConnectionError("No open connection to sql server.")
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+
+            if query_result:
+                # Update
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).update({BotUsers.name:qData[1], BotUsers.display_name:qData[2]})
+            else:
+                # Insert
+                session.add(BotUsers(user_id=qData[0],name=qData[1],display_name=qData[2]))
+
+            session.commit()
+
+        except:
+            raise
+
+
+    @commands.Cog.listener()
+    async def on_populatedb(self,qData):
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                if not member.bot:
+                    await self.on_queryAddMember([(member.id, member.name, member.display_name)])
+
 
     #Add win to winners table
     @commands.Cog.listener()
     async def on_queryAddWin(self,qData): #qData expects [(bot.gameStatus[1]:str(gamename),winner.id)]
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """INSERT INTO bot_scores (winner_id, game)
-                SELECT id, %s
-                FROM bot_users WHERE user_id = %s"""
-                cursor.executemany(q, qData)
-                conn.commit()
-                cursor.close()
-                conn.close()
-                self.bot.dispatch("log",f"mysql: queryAddWinner succeeded. Query passed with values: {qData}")
-            except:
-                raise
+
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            session.add(BotScores(game=qData[0][0],winner_id=qData[0][1],time=datetime.now()))
+            session.commit()
+
+        except:
+            raise
+
+
     
     #########################
     #    ASYNC FUNCTIONS    #
@@ -77,94 +104,57 @@ class sql(commands.Cog):
 
     #Load settings. Return settings values, and games list
     async def queryRetrieveSettings(self): #No need to pass any data here
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """SELECT name,value,type FROM bot_settings"""
-                cursor.execute(q)
-                settingRes = cursor.fetchall() #Returns list of tuples
-                q = """SELECT name,pretty_name FROM bot_games"""
-                cursor.execute(q)
-                gameRes = cursor.fetchall()
-                cursor.close()
-                conn.close()
-            except:
-                raise
 
-            settings = {}
-            games = {}
-            #All setting values are TEXT in DB - so convert to whatever is needed and append to settings dict
-            for setting in settingRes:
-                if setting[2] == 'int':
-                    settings[setting[0]] = int(setting[1])
-                elif setting[2] == 'float':
-                    settings[setting[0]] = float(setting[1])
-                elif setting[2] == 'str':
-                    settings[setting[0]] = setting[1]
-            
-            for game in gameRes:
-                games[game[0]] = game[1]
-            
-            settings['prettyGames'] = games
-            return settings
-        else:
-            return "Connection failed to open"
+        with open("settings.yaml", "r") as f:
+            data = yaml.safe_load(f)
+            return data
+
+
 
     #Check bank & return value. Should mostly be used internally
     async def queryCheckBalance(self,qData): #qData expects (member.id,). Single pass only
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """SELECT bank FROM bot_users
-                WHERE user_id = %s"""
-                cursor.execute(q,qData)
-                res = cursor.fetchone()
-                conn.commit()
-                cursor.close()
-                conn.close()
-                self.bot.dispatch("log",f"mysql: queryCheckBalance succeeded. Query passed with values: {qData}")
-                return res[0]
-            except:
-                raise
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+
+            if query_result:
+                # Update
+                return query_result.bank
+
+            return 0
+
+        except:
+            raise
     
     #Attempt to withdraw. Automatically checks balance so don't call separately
     async def queryWithdraw(self,qData): #qData expects [(withdraw_amount,member_id)]
         bal = await self.queryCheckBalance((qData[0][1],))
         if bal >= qData[0][0]:
-            conn = openConnection()
-            if conn.is_connected():
-                try:
-                    cursor = conn.cursor()
-                    q = """UPDATE bot_users SET bank = bank - %s
-                    WHERE user_id = %s"""
-                    cursor.executemany(q,qData)
-                    conn.commit()
-                    cursor.close()
-                    conn.close()
-                    self.bot.dispatch("log",f"mysql: queryWithdraw succeeded. Query passed with values: {qData}")
-                    return True
-                except:
-                    raise
-        else:
-            return False
+            Session = sessionmaker(bind=engine)
+            session = Session()
 
-    #Pay
-    async def queryPay(self,qData): #qData expects [(pay_amount,member_id)]
-        conn = openConnection()
-        if conn.is_connected():
             try:
-                cursor = conn.cursor()
-                q = """UPDATE bot_users SET bank = bank + %s
-                WHERE user_id = %s""" 
-                cursor.executemany(q,qData)
-                conn.commit()
-                cursor.close()
-                conn.close()
-                self.bot.dispatch("log",f"mysql: queryPay succeeded. Query passed with values: {qData}")
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][1]).update({BotUsers.bank:BotUsers.bank - qData[0][0]})
+                session.commit()
+                return True
             except:
                 raise
+        
+
+    # #Pay
+    async def queryPay(self,qData): #qData expects [(pay_amount,member_id)]
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][1]).update({BotUsers.bank: BotUsers.bank + qData[0][0] })
+            session.commit()
+            return True
+        except:
+            raise
+    
+
 
     #Transfer - Use this wherever possible as general transfer from one ID to another
     async def queryTransfer(self,qData): #qData expects [(pay_amount,from_member_id,to_member_id)]
@@ -176,50 +166,50 @@ class sql(commands.Cog):
             return False
     
     async def queryPayDole(self,qData): #qData expects [(member_id,)]
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """UPDATE bot_users
-                SET last_dole = CURRENT_TIMESTAMP()
-                WHERE user_id = %s
-                """
-                cursor.executemany(q,qData)
-                conn.commit()
-                cursor.close()
-                conn.close()
-                self.bot.dispatch("log",f"mysql: queryPayDole succeeded. Query passed with values: {qData}")
-            except:
-                raise
-            await self.queryPay([(self.bot.dolePayment,qData[0][0])]) #Tie dole payments to setting
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][0]).update({BotUsers.last_dole:datetime.now()})
+
+
+
+            session.commit()
+        except:
+            raise
+        await self.queryPay([(self.bot.dolePayment,qData[0][0])]) #Tie dole payments to setting
 
     #Dole checker. This returns their dict of bank value, and allow/disallow dole claim {value,binary allowed/blocked}
+
+
     async def queryCheckDole(self,qData): #qData expects (member.id,)
-        conn = openConnection()
-        if conn.is_connected():
-            try:
-                cursor = conn.cursor()
-                q = """SELECT bank, TIMEDIFF(CURRENT_TIMESTAMP,last_dole)
-                FROM bot_users
-                WHERE user_id = %s"""
-                cursor.execute(q,qData)
-                res = cursor.fetchone()
-                conn.commit()
-                cursor.close()
-                conn.close()
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
 
-                if res[1].total_seconds() > self.bot.doleTimeout and res[0] < self.bot.doleLimit:
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+
+            if query_result:
+                next_dole = timedelta(seconds=0)
+                if query_result.last_dole == None:
                     allow = True
-                else:
-                    allow = False
 
-                self.bot.dispatch("log",f"mysql:queryCheckDole succeeded. Query passed with values: {qData}")
+                else:
+                    if (datetime.now() - query_result.last_dole) > timedelta(seconds=self.bot.doleTimeout) and query_result.bank < self.bot.doleLimit:
+                        allow = True
+                    else:
+                        allow = False
+                        next_dole = (timedelta(seconds=self.bot.doleTimeout) -  (datetime.now() - query_result.last_dole))
+
                 return {
-                    "balance":res[0],
-                    "allow":allow
+                    "balance":query_result.bank,
+                    "allow":allow,
+                    "nextdole": next_dole
                 }
-            except:
+            else:
                 raise
+        except:
+            raise
 
 #########################
 #      FINAL SETUP      #

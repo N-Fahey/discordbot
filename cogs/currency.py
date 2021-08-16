@@ -25,7 +25,9 @@ class currency(commands.Cog):
         elif check["balance"] >= self.bot.doleLimit:
             reply = "You have too much money. Poors only"
         else:
-            reply = "You already received your daily handout. Wait 24 hours."
+            hrs, rem = divmod(check['nextdole'].seconds, 3600)
+            mins, sec = divmod(rem, 60)
+            reply = f"`{ctx.author.display_name}`, you already received your daily handout. Wait {hrs}h {mins}m"
         
         await ctx.send(reply)
 
