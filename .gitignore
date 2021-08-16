@@ -11,4 +11,6 @@
 __pycache__/
 
 # sql database ignore
-*.sql
+*.db
+
+
