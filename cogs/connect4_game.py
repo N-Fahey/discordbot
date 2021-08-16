@@ -148,7 +148,7 @@ class connect4_game(commands.Cog):
             self.bot.gamePlayers.append(ctx.author)
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created connect4 lobby.")
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Connect 4. !join to enter the lobby. Currently waiting: {ctx.author.display_name}")
+            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play Connect 4. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start connect4")
     
@@ -194,7 +194,7 @@ class connect4_game(commands.Cog):
         else:
             self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type,result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
-            await self.bot.game.msg.channel.send(f"Game over! {result.display_name} is the winner!")
+            await self.bot.game.msg.channel.send(f"Game over! `{result.display_name}` is the winner!")
         await self.bot.game.msg.edit(content = board, embed = None)
         await self.bot.game.msg.clear_reactions()
         self.bot.gamePlayers = []

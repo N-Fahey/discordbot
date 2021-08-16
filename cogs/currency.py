@@ -37,7 +37,7 @@ class currency(commands.Cog):
         if target is not None and amount > 0:
             sqlCog = self.bot.get_cog("sql")
             if await sqlCog.queryTransfer([(amount,ctx.author.id,target.id)]):
-                reply = f"Succesfully sent {self.bot.currencyCode}{amount} to {target.display_name}."
+                reply = f"Succesfully sent {self.bot.currencyCode}{amount} to `{target.display_name}`."
             else:
                 reply = f"You don't have enough money to do that!"
         else:
@@ -50,7 +50,7 @@ class currency(commands.Cog):
         sqlCog = self.bot.get_cog("sql")
         bal = await sqlCog.queryCheckBalance((ctx.author.id,))
         
-        await ctx.send(f"{ctx.author.display_name}, your balance is {self.bot.currencyCode}{bal}")
+        await ctx.send(f"`{ctx.author.display_name}`, your balance is {self.bot.currencyCode}{bal}")
             
 def setup(bot):
     bot.add_cog(currency(bot))
