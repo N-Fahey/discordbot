@@ -202,7 +202,8 @@ class sql(commands.Cog):
 
                 return {
                     "balance":query_result.bank,
-                    "allow":allow
+                    "allow":allow,
+                    "nextdole": (timedelta(seconds=self.bot.doleTimeout) -  (datetime.now() - query_result.last_dole))
                 }
             else:
                 raise
