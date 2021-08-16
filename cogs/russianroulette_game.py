@@ -56,6 +56,30 @@ class russianroulette_game(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
 
+    def get_game_class(self,players):
+        return RussianRoulette(players)
+
+    # Lobby Capacity Check
+    def lobby_capacity_check_start(self,ctx):
+        if len(self.bot.gamePlayers) > 1 and len(self.bot.gamePlayers) <= 6:
+            return True
+        return False
+    
+    def lobby_capacity_check_join(self,ctx):
+        if len(self.bot.gamePlayers) > 5:
+            return False
+        return True
+    
+    # Message to send if lobby capacity check fails
+    def lobby_capacity_fail_message(self):
+        return "There must be between 1 and 6 players"
+
+
+    # on_game_start event
+    def on_game_start(self,ctx):
+        self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{self.bot.game.players[self.bot.game.current_player].display_name}` has the weapon")
+    
+
     #########################
     #        COMMANDS       #
     #########################
@@ -103,27 +127,6 @@ class russianroulette_game(commands.Cog):
         else:
             self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver")
 
-    #russianroulette (Initiator)
-    @commands.command(name="roulette", help="Start a game of Russian Roulette\n The lobby will close automatically after 5 minutes.")
-    async def russianroulette(self, ctx):
-        #If lobby or running game, stop
-        if self.bot.game_state.in_lobby:
-            self.bot.dispatch("sendReply",ctx,f"A lobby is already open. !join to enter the lobby.")
-            return
-        if self.bot.game_state.in_game:
-            self.bot.dispatch("sendReply",ctx,f"A game is already running. Wait until it's finished to start another.")
-            return
-
-        if not self.bot.game_state.in_game:
-            self.bot.game_state.in_lobby = True
-            self.bot.game_state.game_type = "russianroulette"
-            self.bot.gamePlayers.append(ctx.author)
-            PlayersPretty = [player.display_name for player in self.bot.gamePlayers]
-            self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
-            self.bot.dispatch("log",f"lobby: {ctx.author} created russianroulette lobby.")
-            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play Russian Roulette. !join to enter the lobby. Currently waiting: {','.join(PlayersPretty)}")
-        else: #Error handling
-            raise RuntimeError("Invalid status code returned while trying to start liarsdice")
 
     #########################
     #     COMMAND ERRORS    #

@@ -111,31 +111,28 @@ class liarsdice_game(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
 
-    #########################
-    #        COMMANDS       #
-    #########################
 
-    #liarsdice (Initiator)
-    @commands.command(name="liarsdice", help="Start a game of Liar's Dice\nThe lobby will close automatically after 5 minutes.")
-    async def liarsdice(self, ctx):
-        #If lobby or running game, stop
-        if self.bot.game_state.in_lobby:
-            self.bot.dispatch("sendReply",ctx,f"A lobby is already open. !join to enter the lobby.")
-            return
-        if self.bot.game_state.in_game:
-            self.bot.dispatch("sendReply",ctx,f"A game is already running. Wait until it's finished to start another.")
-            return
+    def get_game_class(self,players):
+        return LiarsDice(players)
 
-        if not self.bot.game_state.in_game:
-            self.bot.game_state.in_lobby = True
-            self.bot.game_state.game_type = "liarsdice"
-            self.bot.gamePlayers.append(ctx.author)
-            dicePlayersPretty = ["`" + player.display_name + "`" for player in self.bot.gamePlayers]
-            self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
-            self.bot.dispatch("log",f"lobby: {ctx.author} created liarsdice lobby.")
-            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play Liar's Dice. !join to enter the lobby. Currently waiting: {','.join(dicePlayersPretty)}")
-        else: #Error handling
-            raise RuntimeError("Invalid status code returned while trying to start liarsdice")
+    # Lobby Capacity Check
+    def lobby_capacity_check_start(self,ctx):
+        if len(self.bot.gamePlayers) > 1:
+            return True
+        return False
+    
+    def lobby_capacity_check_join(self,ctx):
+        return True
+
+    # Message to send if lobby capacity check fails
+    def lobby_capacity_fail_message(self):
+        return "There must be more than 1 player to play in order to start"
+
+
+    # on_game_start event
+    def on_game_start(self,ctx):
+        self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {self.bot.game.better.mention}, place your bet.")
+        self.bot.dispatch("messageHands")
 
     #bet
     @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
