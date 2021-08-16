@@ -1,6 +1,5 @@
 import os,datetime
 from discord.ext import commands
-from mysql.connector import connect,Error
 from dotenv import load_dotenv
 import yaml
 from sqlalchemy import create_engine, Table, Column, Integer, String, MetaData,BigInteger, DateTime
