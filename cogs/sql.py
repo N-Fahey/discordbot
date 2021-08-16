@@ -16,8 +16,8 @@ engine = create_engine(os.getenv("DB_CONNSTR"), echo = True)
 class BotUsers(Base):
     __tablename__ = 'bot_users'
     user_id = Column('user_id', BigInteger, primary_key=True)
-    name = Column('name', String)
-    display_name =  Column('display_name', String)
+    name = Column('name', String(200))
+    display_name =  Column('display_name', String(200))
     bank = Column('bank', BigInteger, default=100)
     last_dole = Column('last_dole', DateTime)
 
@@ -27,7 +27,7 @@ class BotScores(Base):
     uid = Column('id', Integer, primary_key=True)
     winner_id = Column('winner_id', BigInteger)
     time = Column('time', DateTime)
-    game = Column('game', String)
+    game = Column('game', String(200))
 
 
 Base.metadata.create_all(engine)
@@ -190,7 +190,7 @@ class sql(commands.Cog):
             query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
 
             if query_result:
-                
+                next_dole = timedelta(seconds=0)
                 if query_result.last_dole == None:
                     allow = True
 
@@ -199,11 +199,12 @@ class sql(commands.Cog):
                         allow = True
                     else:
                         allow = False
+                        next_dole = (timedelta(seconds=self.bot.doleTimeout) -  (datetime.now() - query_result.last_dole))
 
                 return {
                     "balance":query_result.bank,
                     "allow":allow,
-                    "nextdole": (timedelta(seconds=self.bot.doleTimeout) -  (datetime.now() - query_result.last_dole))
+                    "nextdole": next_dole
                 }
             else:
                 raise
