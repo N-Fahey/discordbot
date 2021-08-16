@@ -72,7 +72,7 @@ class lobby(commands.Cog):
 
 
         #Russian Roulette lobby handling
-        if self.bot.game_state.game_type == "russianroulette":
+        elif self.bot.game_state.game_type == "russianroulette":
             if len(self.bot.gamePlayers) > 1:
                 self.bot.game = RussianRoulette(self.bot.gamePlayers)
                 self.bot.game_state.in_lobby = False
@@ -82,8 +82,6 @@ class lobby(commands.Cog):
                 reply = f"😐 🔫 Starting Russian Roulette! `{self.bot.game.players[self.bot.game.current_player].display_name}` has the weapon"
             else:
                 reply = "Russian roulette player count must be between 1 and 6 players"
-
-
 
 
 
