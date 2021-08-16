@@ -56,6 +56,7 @@ class russianroulette_game(commands.Cog):
           
             self.unlucky_chamber = randint(0,5)
             self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun..")
+            self.bot.game.current_player += 1
         else:
             self.bot.game.current_player += 1
 

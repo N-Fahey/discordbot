@@ -86,7 +86,7 @@ class sql(commands.Cog):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
-            session.add(BotScores(game=qData[0],winner_id=qData[1],time=datetime.now()))
+            session.add(BotScores(game=qData[0][0],winner_id=qData[0][1],time=datetime.now()))
             session.commit()
 
         except:
