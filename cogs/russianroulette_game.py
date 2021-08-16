@@ -39,11 +39,11 @@ class russianroulette_game(commands.Cog):
             return
 
         if ctx.author != self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]:
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the weapon")
+            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return  
 
         if self.bot.game.current_player % 6 == self.bot.game.unlucky_chamber:
-            self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the weapon ⚰️")
+            self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
             self.bot.game.players.remove(ctx.author)
 
             # if there are still active players
@@ -54,13 +54,12 @@ class russianroulette_game(commands.Cog):
                 self.bot.gamePlayers = []
                 return
           
-            self.unlucky_chamber = randint(0,5)
+            self.bot.game.unlucky_chamber = randint(0,5)
             self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun..")
-            self.bot.game.current_player += 1
         else:
             self.bot.game.current_player += 1
 
-        self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the weapon ")
+        self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the revolver ")
 
 
 
@@ -72,7 +71,7 @@ class russianroulette_game(commands.Cog):
             return
 
         if ctx.author != self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]:
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the weapon")
+            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return  
 
         if self.bot.game.get_current_weapon_holder_idx() in self.bot.game.players_who_have_rerolled:
@@ -82,7 +81,7 @@ class russianroulette_game(commands.Cog):
         self.bot.game.players_who_have_rerolled.append(self.bot.game.get_current_weapon_holder_idx())
         self.bot.game.unlucky_chamber = randint(0,5)
         self.bot.game.current_player += 1
-        self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the weapon")
+        self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the revolver")
 
 
 
