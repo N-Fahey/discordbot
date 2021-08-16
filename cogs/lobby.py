@@ -30,18 +30,18 @@ class lobby(commands.Cog):
 
         if self.bot.game_state.in_lobby:
             if ctx.author in self.bot.gamePlayers:
-                reply = f"{ctx.author.display_name}, you're already in the lobby."
+                reply = f"`{ctx.author.display_name}`, you're already in the lobby."
             elif self.bot.game_state.game_type == "connect4" and len(self.bot.gamePlayers) > 1: #Connect 4 exceptions
-                reply = f"Sorry {ctx.author.display_name}, Connect 4 only supports 2 players."
+                reply = f"Sorry `{ctx.author.display_name}`, Connect 4 only supports 2 players."
             else:
                 self.bot.gamePlayers.append(ctx.author)
-                gamePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
+                gamePlayersPretty = ["`" + player.display_name + "`" for player in self.bot.gamePlayers]
                 self.bot.dispatch("log",f"lobby: {ctx.author} joined {self.bot.game_state.game_type} lobby")
                 if self.bot.game_state.game_type == "connect4":
                     ctx.author = self.bot.gamePlayers[0]
                     await self.start(ctx)
                     return
-                reply = f"{ctx.author.display_name} joined the {self.bot.prettyGames[self.bot.game_state.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
+                reply = f"`{ctx.author.display_name}` joined the {self.bot.prettyGames[self.bot.game_state.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
             self.bot.dispatch("sendReply",ctx,reply)
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start liarsdice")

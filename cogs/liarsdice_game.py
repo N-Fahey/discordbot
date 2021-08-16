@@ -130,10 +130,10 @@ class liarsdice_game(commands.Cog):
             self.bot.game_state.in_lobby = True
             self.bot.game_state.game_type = "liarsdice"
             self.bot.gamePlayers.append(ctx.author)
-            dicePlayersPretty = [player.display_name for player in self.bot.gamePlayers]
+            dicePlayersPretty = ["`" + player.display_name + "`" for player in self.bot.gamePlayers]
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created liarsdice lobby.")
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name} wants to play Liar's Dice. !join to enter the lobby. Currently waiting: {','.join(dicePlayersPretty)}")
+            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play Liar's Dice. !join to enter the lobby. Currently waiting: {','.join(dicePlayersPretty)}")
         else: #Error handling
             raise RuntimeError("Invalid status code returned while trying to start liarsdice")
 
@@ -145,7 +145,7 @@ class liarsdice_game(commands.Cog):
             return
 
         if ctx.author != self.bot.game.better:
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, it's not your turn to bet.")
+            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}`, it's not your turn to bet.")
             return
 
         if 1 <= face <= 6 and 1 <= qty <= 6 * self.bot.game.pcount:
@@ -153,9 +153,9 @@ class liarsdice_game(commands.Cog):
             res = self.bot.game.betHandler(qty,face,ctx.author) #Do this if passes checks
             if res == True:
                 emoji = f"d{face}"
-                reply = f"{ctx.author.display_name} placed bet of {qty} x {self.bot.emojiDict[emoji]}. {self.bot.game.better.mention}, your turn to bet."
+                reply = f"`{ctx.author.display_name}` placed bet of {qty} x {self.bot.emojiDict[emoji]}. {self.bot.game.better.mention}, your turn to bet."
             else:
-                reply = f"{ctx.author.display_name}, you can't make that bet. Try again. Use !bet [quantity] [face]"
+                reply = f"`{ctx.author.display_name}`, you can't make that bet. Try again. Use !bet [quantity] [face]"
         else:
             reply = "Bet invalid."
 
@@ -169,7 +169,7 @@ class liarsdice_game(commands.Cog):
             return
 
         if ctx.author != self.bot.game.better:
-            self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, it's not your turn to bet.")
+            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}`, it's not your turn to bet.")
             return  
 
         if self.bot.game.lastBet == [0,0,0]:
@@ -182,10 +182,10 @@ class liarsdice_game(commands.Cog):
         if res[1] == "continue" or res[1] == "end":
             if res[0] == ctx.author:
                 logmsg = f"liarsdice: {ctx.author} called liar against {res[0]} incorrectly. {ctx.author} removed from game."
-                reply = f"Wrong, total number of {lastBet[1]}'s was: {totals[lastBet[1]]}. {res[0].display_name} loses!"
+                reply = f"Wrong, total number of {lastBet[1]}'s was: {totals[lastBet[1]]}. `{res[0].display_name}` loses!"
             elif res[0] == lastBet[2]:
                 logmsg = f"liarsdice: {ctx.author} called liar against {res[0]} correctly. {res[0]} removed from game."
-                reply = f"{res[0].display_name}, you're liar and you will spend an eternity on this ship! Total number of {lastBet[1]}'s was: {totals[lastBet[1]]}."
+                reply = f"`{res[0].display_name}`, you're liar and you will spend an eternity on this ship! Total number of {lastBet[1]}'s was: {totals[lastBet[1]]}."
             else:
                 raise RuntimeError("Invalid player returned by betLiar.")
         else:
