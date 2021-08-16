@@ -16,8 +16,37 @@ class RussianRoulette:
         self.current_player = 0
         self.unlucky_chamber = randint(0,5)
         
-    def get_current_weapon_holder_idx(self):
-        return self.current_player % len(self.players)
+    def get_current_weapon_holder(self):
+        return self.players[self.current_player % len(self.players)]
+    
+    def handle_pull(self,player):
+        if player != self.get_current_weapon_holder():
+            return "not_holder"
+        
+        if self.current_player % 6 == self.unlucky_chamber:
+            self.players.remove(player)
+            if len(self.players) > 1:
+                #Continue the game
+                self.unlucky_chamber = randint(0,5)
+                return "dead"
+            else:
+                #Return the winner
+                return self.players[0]
+        else:
+            self.current_player += 1
+            return "continue"
+    
+    def handle_spin(self,player):
+        if player != self.get_current_weapon_holder():
+            return "not_holder"
+
+        if player in self.players_who_have_rerolled:
+            return "already_spun"
+        
+        self.players_who_have_rerolled.append(player)
+        self.unlucky_chamber = randint(0,5)
+        self.current_player += 1
+        return True
 
 #########################
 #       Extension       #
@@ -32,36 +61,30 @@ class russianroulette_game(commands.Cog):
     #########################
 
     @commands.command("pull", help="Fire the weapon")
-    async def handle_pull(self,ctx):
+    async def pull(self,ctx):
         #If lobby or running game, stop
         if not self.bot.game_state.in_game or self.bot.game_state.game_type != "russianroulette":
             self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
             return
 
-        if ctx.author != self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]:
+        pull_result = self.bot.game.handle_pull(ctx.author)
+        if pull_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
-            return  
-
-        if self.bot.game.current_player % 6 == self.bot.game.unlucky_chamber:
+            return
+        elif pull_result == "dead":
             self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
-            self.bot.game.players.remove(ctx.author)
-
-            # if there are still active players
-            if len(self.bot.game.players) < 2:
-                self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{self.bot.game.players[0].display_name}` is the winner 🏆🏆")
-                self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game.players[0].id)])
-                self.bot.game_state.end_game()
-                self.bot.gamePlayers = []
-                return
-          
-            self.bot.game.unlucky_chamber = randint(0,5)
-            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun..")
+            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver.")
+            return
+        elif pull_result == "continue":
+            self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver ")
+            return
         else:
-            self.bot.game.current_player += 1
-
-        self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the revolver ")
-
-
+            self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
+            self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{self.bot.game.players[0].display_name}` is the winner 🏆🏆")
+            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game.players[0].id)])
+            self.bot.game_state.end_game()
+            self.bot.gamePlayers = []
+            self.bot.game = None
 
     @commands.command("spin", help="Spin the cylinder of the revolver")
     async def handle_click(self,ctx):
@@ -70,20 +93,15 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
             return
 
-        if ctx.author != self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]:
+        spin_result = self.bot.game.handle_spin(ctx.author)
+        if spin_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
-            return  
-
-        if self.bot.game.get_current_weapon_holder_idx() in self.bot.game.players_who_have_rerolled:
+            return
+        elif spin_result == "already_spun":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
-        
-        self.bot.game.players_who_have_rerolled.append(self.bot.game.get_current_weapon_holder_idx())
-        self.bot.game.unlucky_chamber = randint(0,5)
-        self.bot.game.current_player += 1
-        self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.players[self.bot.game.get_current_weapon_holder_idx()]}` now holds the revolver")
-
-
+        else:
+            self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver")
 
     #russianroulette (Initiator)
     @commands.command(name="roulette", help="Start a game of Russian Roulette\n The lobby will close automatically after 5 minutes.")
