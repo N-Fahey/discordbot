@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands,timers
 from discord import Embed
 from discord.ext.commands.errors import MissingPermissions
 import random
@@ -16,6 +16,7 @@ class Lobby:
         self.game = None
         self.message = None
         self.lobby_unique_id = '{:03}'.format(random.randrange(1, 10**3))
+        self.timer = None
 
         # you can include stuff like lobby betting pot in here
 
@@ -156,12 +157,10 @@ class lobby(commands.Cog):
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:
             lobby = Lobby(ctx.author,match[0])
+            lobby.timer = timers.TimerManager(self.bot)
+            lobby.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[lobby])
             self.bot.game_lobbies.append(lobby)
-            # self.bot.game_state.start_lobby(match[0])
-            # self.bot.game_state.game_players.append(ctx.author)
-            # self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created {match[0]} [{lobby.lobby_unique_id}] lobby.")
-            # self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[lobby.game_type]}. !join {lobby.lobby_unique_id} to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
             lobby.message = await ctx.send(embed=self.get_lobby_embed_message(lobby)) 
             return
 
@@ -203,7 +202,6 @@ class lobby(commands.Cog):
 
         member_lobby.game = game_cog.get_game_class(member_lobby.lobby_players)
         member_lobby.in_game = True
-        # self.bot.timer.clear()
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
         self.bot.dispatch("log",f"{member_lobby.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in member_lobby.lobby_players[1:])}")
         game_cog.on_game_start(ctx)
@@ -218,46 +216,34 @@ class lobby(commands.Cog):
             if game_channel is not None:
                 self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
                 return
-                
-        if ctx.bot == True:
-            # reply = f"{self.bot.prettyGames[self.bot.game_state.game_type]} lobby timed out."
-            # self.bot.dispatch("log",f"{self.bot.game_state.game_type} lobby timed out.")
-            pass
-        else:
-            member_lobby = self.get_member_lobby(ctx.author)
-            if not member_lobby:
-                self.bot.dispatch("sendReply",ctx,"You're not in a lobby")
-                return
-            if not member_lobby.is_owner(ctx.author):
-                self.bot.dispatch("sendReply",ctx,"You're not the owner")
-                return
-            if member_lobby.in_game:
-                self.bot.dispatch("sendReply",ctx,"Can't cancel a running game")
-                return
 
-            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
-            self.bot.game_lobbies.remove(member_lobby)
-            reply = f"{self.bot.prettyGames[member_lobby.game_type]} [{member_lobby.lobby_unique_id}] lobby closed."
-            self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
-            self.bot.dispatch("sendReply",ctx,reply)
+        member_lobby = self.get_member_lobby(ctx.author)
+        if not member_lobby:
+            self.bot.dispatch("sendReply",ctx,"You're not in a lobby")
+            return
+        if not member_lobby.is_owner(ctx.author):
+            self.bot.dispatch("sendReply",ctx,"You're not the owner")
+            return
+        if member_lobby.in_game:
+            self.bot.dispatch("sendReply",ctx,"Can't cancel a running game")
+            return
 
-    #########################
-    #     COMMAND ERRORS    #
-    #########################
-
-    @kill_lobby.error
-    async def kill_lobby_error(ctx,error):
-        if isinstance(error, MissingPermissions):
-            await ctx.send("You can't do that")
+        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
+        self.bot.game_lobbies.remove(member_lobby)
+        reply = f"{self.bot.prettyGames[member_lobby.game_type]} [{member_lobby.lobby_unique_id}] lobby closed."
+        self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
+        self.bot.dispatch("sendReply",ctx,reply)
 
     #########################
     #    EVENT LISTENERS    #
     #########################
 
     @commands.Cog.listener()
-    async def on_lobbytimer(self,ctx):
-        ctx.bot = True
-        await self.kill_lobby(ctx)
+    async def on_lobbytimer(self,member_lobby):
+        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
+        self.bot.game_lobbies.remove(member_lobby)
+        self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
+        self.bot.dispatch("sendReply",member_lobby.message.channel,f"{self.bot.prettyGames[member_lobby.game_type]} [{member_lobby.lobby_unique_id}] lobby timed out.")
         
 #########################
 #      FINAL SETUP      #

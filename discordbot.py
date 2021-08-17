@@ -1,5 +1,5 @@
 import os,discord
-from discord.ext import commands,timers
+from discord.ext import commands
 from dotenv import load_dotenv
 
 #Get required environment variables
@@ -26,7 +26,6 @@ async def get_prefix(bot,msg):
 
 #Setup attributes
 self = commands.Bot(command_prefix=get_prefix, intents=intents)
-self.timer = timers.TimerManager(self)
 self.emojiDict = {}
 self.vc = None
 

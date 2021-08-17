@@ -91,9 +91,6 @@ class admin(commands.Cog):
     #Reset
     @commands.Cog.listener()
     async def on_reset(self):
-        self.bot.game = None
-        self.bot.timer.clear()    
-        self.bot.gamePlayers = []
         self.bot.emojiDict = {}
         self.bot.emojiDict = {e.name:str(e) for e in self.bot.emojis}
         self.bot.vc = None
