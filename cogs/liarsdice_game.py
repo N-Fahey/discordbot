@@ -210,7 +210,7 @@ class liarsdice_game(commands.Cog):
         else:
             self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             self.bot.dispatch("sendReply",ctx,f"Game is over. {member_lobby.game.players[0].mention} is the winner!")
-            self.bot.lobby_end_game(member_lobby)
+            await self.bot.lobby_end_game(member_lobby)
 
     #########################
     #     COMMAND ERRORS    #

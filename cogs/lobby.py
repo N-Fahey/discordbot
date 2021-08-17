@@ -14,6 +14,7 @@ class Lobby:
         self.in_game = False
         self.game_type = game_type
         self.game = None
+        self.message = None
         self.lobby_unique_id = '{:03}'.format(random.randrange(1, 10**3))
 
         # you can include stuff like lobby betting pot in here
@@ -54,8 +55,28 @@ class lobby(commands.Cog):
 
         return None
     
-    def lobby_end_game(self,lobby):
+    async def lobby_end_game(self,lobby):
+        await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True)) 
         self.bot.game_lobbies.remove(lobby)
+
+
+    def get_lobby_embed_message(self,lobby, closed=False):
+        embed = Embed(title=f"{lobby.lobby_owner.display_name} wants to play {self.bot.prettyGames[lobby.game_type]}")
+        player_list = ' '.join(i.name for i in lobby.lobby_players)
+        embed.set_thumbnail(url=lobby.lobby_owner.avatar_url)
+        embed.add_field(name='ID',value=lobby.lobby_unique_id)
+        embed.add_field(name='Game',value=self.bot.prettyGames[lobby.game_type])
+        embed.add_field(name='Owner',value=lobby.lobby_owner.mention)
+        if not closed:
+            embed.add_field(name='State',value="Waiting for players..." if not lobby.in_game else "In Game")
+            embed.add_field(name='Players',value=player_list if len(player_list) > 0 else "None",inline=False)
+            embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_unique_id}",inline=False)
+        else:
+            embed.add_field(name='State',value="Closed")
+            embed.add_field(name='Closed',value=f"Lobby is now closed.",inline=False)
+        return embed
+
+
 
 
 
@@ -103,13 +124,13 @@ class lobby(commands.Cog):
         game_cog = self.bot.get_cog(lobby_to_join.game_type+"_game")
         if game_cog.lobby_capacity_check_join(lobby_to_join.lobby_players):
             lobby_to_join.lobby_players.append(ctx.author)
-            gamePlayersPretty = ["`" + player.display_name + "`" for player in lobby_to_join.lobby_players]
+            # gamePlayersPretty = ["`" + player.display_name + "`" for player in lobby_to_join.lobby_players]
             self.bot.dispatch("log",f"lobby: {ctx.author} joined {lobby_to_join.game_type} lobby")
-            reply = f"`{ctx.author.display_name}` joined the {self.bot.prettyGames[lobby_to_join.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
+            # reply = f"`{ctx.author.display_name}` joined the {self.bot.prettyGames[lobby_to_join.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
+            await lobby_to_join.message.edit(embed=self.get_lobby_embed_message(lobby_to_join)) 
         else:
             reply = self.bot.get_cog(lobby_to_join.game_type+"_game").lobby_capacity_fail_message()
-
-        self.bot.dispatch("sendReply",ctx,reply)
+            self.bot.dispatch("sendReply",ctx,reply)
 
     @commands.command(name="game",help="Start a game {gamename}")
     async def game(self,ctx, game:str = "help"):
@@ -131,7 +152,6 @@ class lobby(commands.Cog):
             await ctx.send(embed=embed)
             return          
 
-          
 
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:
@@ -141,7 +161,8 @@ class lobby(commands.Cog):
             # self.bot.game_state.game_players.append(ctx.author)
             # self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
             self.bot.dispatch("log",f"lobby: {ctx.author} created {match[0]} [{lobby.lobby_unique_id}] lobby.")
-            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[lobby.game_type]}. !join {lobby.lobby_unique_id} to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
+            # self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[lobby.game_type]}. !join {lobby.lobby_unique_id} to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
+            lobby.message = await ctx.send(embed=self.get_lobby_embed_message(lobby)) 
             return
 
         self.bot.dispatch("sendReply",ctx,f"game not found.")
@@ -183,6 +204,7 @@ class lobby(commands.Cog):
         member_lobby.game = game_cog.get_game_class(member_lobby.lobby_players)
         member_lobby.in_game = True
         # self.bot.timer.clear()
+        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
         self.bot.dispatch("log",f"{member_lobby.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in member_lobby.lobby_players[1:])}")
         game_cog.on_game_start(ctx)
         return
@@ -212,7 +234,8 @@ class lobby(commands.Cog):
             if member_lobby.in_game:
                 self.bot.dispatch("sendReply",ctx,"Can't cancel a running game")
                 return
-            
+
+            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
             self.bot.game_lobbies.remove(member_lobby)
             reply = f"{self.bot.prettyGames[member_lobby.game_type]} [{member_lobby.lobby_unique_id}] lobby closed."
             self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
