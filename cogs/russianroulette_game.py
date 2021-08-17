@@ -60,13 +60,13 @@ class russianroulette_game(commands.Cog):
         return RussianRoulette(players)
 
     # Lobby Capacity Check
-    def lobby_capacity_check_start(self):
-        if len(self.bot.game_state.game_players) > 1 and len(self.bot.game_state.game_players) <= 6:
+    def lobby_capacity_check_start(self, players):
+        if len(players) > 1 and len(players) <= 6:
             return True
         return False
     
-    def lobby_capacity_check_join(self):
-        if len(self.bot.game_state.game_players) > 5:
+    def lobby_capacity_check_join(self, players):
+        if len(players) > 5:
             return False
         return True
     
@@ -77,7 +77,8 @@ class russianroulette_game(commands.Cog):
 
     # on_game_start event
     def on_game_start(self,ctx):
-        self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{self.bot.game_state.game.players[self.bot.game_state.game.current_player].display_name}` has the weapon")
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+        self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{member_lobby.game.players[member_lobby.game.current_player].display_name}` has the weapon")
     
 
     #########################
@@ -87,35 +88,48 @@ class russianroulette_game(commands.Cog):
     @commands.command("pull", help="Fire the weapon")
     async def pull(self,ctx):
         #If lobby or running game, stop
-        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "russianroulette":
-            self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
+
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+
+        if not member_lobby:
+            self.bot.dispatch("sendReply",ctx,"You're not in a lobby.")
             return
 
-        pull_result = self.bot.game_state.game.handle_pull(ctx.author)
+        if not member_lobby.in_game or member_lobby.game_type != "russianroulette":
+            self.bot.dispatch("sendReply",ctx,"You're not in a game of russian roulette.")
+            return
+
+        pull_result = member_lobby.game.handle_pull(ctx.author)
         if pull_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return
         elif pull_result == "dead":
             self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
-            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver.")
+            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver.")
             return
         elif pull_result == "continue":
-            self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver ")
+            self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver ")
             return
         else:
             self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
-            self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{self.bot.game_state.game.players[0].display_name}` is the winner 🏆🏆")
-            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game_state.game.players[0].id)])
-            self.bot.game_state.end_game()
+            self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{member_lobby.game.players[0].display_name}` is the winner 🏆🏆")
+            self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
+            self.bot.lobby_end_game(member_lobby)
 
     @commands.command("spin", help="Spin the cylinder of the revolver")
     async def handle_click(self,ctx):
+        member_lobby = self.bot.get_member_lobby(ctx.author)
         #If lobby or running game, stop
-        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "russianroulette":
-            self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
+
+        if not member_lobby:
+            self.bot.dispatch("sendReply",ctx,"You're not in a lobby.")
             return
 
-        spin_result = self.bot.game_state.game.handle_spin(ctx.author)
+        if not member_lobby.in_game or member_lobby.game_type != "russianroulette":
+            self.bot.dispatch("sendReply",ctx,"You're not in a game of russian roulette.")
+            return
+
+        spin_result = member_lobby.game.handle_spin(ctx.author)
         if spin_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return
@@ -123,7 +137,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
         else:
-            self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver")
+            self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver")
 
 
     #########################

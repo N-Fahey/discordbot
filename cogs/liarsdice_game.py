@@ -116,12 +116,12 @@ class liarsdice_game(commands.Cog):
         return LiarsDice(players)
 
     # Lobby Capacity Check
-    def lobby_capacity_check_start(self):
-        if len(self.bot.game_state.game_players) > 1:
+    def lobby_capacity_check_start(self,players):
+        if len(players) > 1:
             return True
         return False
     
-    def lobby_capacity_check_join(self):
+    def lobby_capacity_check_join(self,players):
         return True
 
     # Message to send if lobby capacity check fails
@@ -131,26 +131,34 @@ class liarsdice_game(commands.Cog):
 
     # on_game_start event
     def on_game_start(self,ctx):
-        self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {self.bot.game_state.game.better.mention}, place your bet.")
-        self.bot.dispatch("messageHands")
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+        self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {member_lobby.game.better.mention}, place your bet.")
+        self.bot.dispatch("messageHands",member_lobby)
 
     #bet
     @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
     async def bet(self, ctx, qty:int, face:int):
-        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+
+        if not member_lobby:
+            self.bot.dispatch("sendReply",ctx,"You're not in a game of liar's dice")
+            return
+
+
+        if not member_lobby.in_game or member_lobby.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
-        if ctx.author != self.bot.game_state.game.better:
+        if ctx.author != member_lobby.game.better:
             self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}`, it's not your turn to bet.")
             return
 
-        if 1 <= face <= 6 and 1 <= qty <= 6 * self.bot.game_state.game.pcount:
+        if 1 <= face <= 6 and 1 <= qty <= 6 * member_lobby.game.pcount:
             self.bot.dispatch("log",f"liarsdice: {ctx.author} placed bet of {qty} {face}'s.")
-            res = self.bot.game_state.game.betHandler(qty,face,ctx.author) #Do this if passes checks
+            res = member_lobby.game.betHandler(qty,face,ctx.author) #Do this if passes checks
             if res == True:
                 emoji = f"d{face}"
-                reply = f"`{ctx.author.display_name}` placed bet of {qty} x {self.bot.emojiDict[emoji]}. {self.bot.game_state.game.better.mention}, your turn to bet."
+                reply = f"`{ctx.author.display_name}` placed bet of {qty} x {self.bot.emojiDict[emoji]}. {member_lobby.game.better.mention}, your turn to bet."
             else:
                 reply = f"`{ctx.author.display_name}`, you can't make that bet. Try again. Use !bet [quantity] [face]"
         else:
@@ -161,20 +169,26 @@ class liarsdice_game(commands.Cog):
     #liar
     @commands.command(name="liar", help="Call the last better a liar in Liar's Dice.")
     async def liar(self,ctx):
-        if not self.bot.game_state.in_game or self.bot.game_state.game_type != "liarsdice":
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+
+        if not member_lobby:
+            self.bot.dispatch("sendReply",ctx,"You're not in a game of liar's dice")
+            return
+
+        if not member_lobby.in_game or member_lobby.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
             return
 
-        if ctx.author != self.bot.game_state.game.better:
+        if ctx.author != member_lobby.game.better:
             self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}`, it's not your turn to bet.")
             return  
 
-        if self.bot.game_state.game.lastBet == [0,0,0]:
+        if member_lobby.game.lastBet == [0,0,0]:
             self.bot.dispatch("sendReply",ctx,f"Nobody has placed a bet yet.")
             return
-        lastBet = self.bot.game_state.game.lastBet
-        totals = self.bot.game_state.game.totals
-        res = self.bot.game_state.game.betLiar(ctx.author)
+        lastBet = member_lobby.game.lastBet
+        totals = member_lobby.game.totals
+        res = member_lobby.game.betLiar(ctx.author)
 
         if res[1] == "continue" or res[1] == "end":
             if res[0] == ctx.author:
@@ -191,12 +205,12 @@ class liarsdice_game(commands.Cog):
         self.bot.dispatch("log",logmsg)
         self.bot.dispatch("sendReply",ctx,reply)
         if res[1] == "continue":
-            self.bot.dispatch("messageHands")
-            self.bot.dispatch("sendReply",ctx,f"Round {self.bot.game_state.game.round}: {self.bot.game_state.game.better.mention}, your turn to bet.")
+            self.bot.dispatch("messageHands",member_lobby)
+            self.bot.dispatch("sendReply",ctx,f"Round {member_lobby.game.round}: {member_lobby.game.better.mention}, your turn to bet.")
         else:
-            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game_state.game.players[0].id)])
-            self.bot.dispatch("sendReply",ctx,f"Game is over. {self.bot.game_state.game.players[0].mention} is the winner!")
-            self.bot.game_state.end_game()
+            self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
+            self.bot.dispatch("sendReply",ctx,f"Game is over. {member_lobby.game.players[0].mention} is the winner!")
+            self.bot.lobby_end_game(member_lobby)
 
     #########################
     #     COMMAND ERRORS    #
@@ -208,15 +222,15 @@ class liarsdice_game(commands.Cog):
             await ctx.send("Missing required argument. You need to !bet {face} {quantity}")
 
     @commands.Cog.listener()
-    async def on_messageHands(self):
+    async def on_messageHands(self,member_lobby):
         hands = {}
-        for p in self.bot.game_state.game.hands:
+        for p in member_lobby.game.hands:
             dice = []
-            for i in self.bot.game_state.game.hands[p]:
+            for i in member_lobby.game.hands[p]:
                 dice.append(self.bot.emojiDict[f"d{i}"])
             hands[p] = dice
 
-        for player in self.bot.game_state.game.players:
+        for player in member_lobby.game.players:
             await player.send("Here are your dice. Keep them a secret!")
             await player.send(" ".join(hands[player]))
 

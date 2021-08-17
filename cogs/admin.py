@@ -92,7 +92,7 @@ class admin(commands.Cog):
         self.bot.emojiDict = {}
         self.bot.emojiDict = {e.name:str(e) for e in self.bot.emojis}
         self.bot.vc = None
-        self.bot.game_state.end_game()
+        self.bot.game_lobbies = []
         return True
 
 #########################
