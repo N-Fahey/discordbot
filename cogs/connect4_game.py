@@ -126,32 +126,31 @@ class connect4:
 class connect4_game(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-    
-    #########################
-    #        COMMANDS       #
-    #########################
 
-    #connect4 (initiator)
-    @commands.command("connect4", help="Start a game of Connect 4\nThe lobby will automatically close after 5 minutes")
-    async def connect4(self,ctx):
-        #If lobby or running game, stop
-        if self.bot.game_state.in_lobby:
-            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.game_state.game_type]} lobby is already open. !join to enter the lobby.")
-            return
-        if self.bot.game_state.in_game:
-            self.bot.dispatch("sendReply",ctx,f"A {self.bot.prettyGames[self.bot.game_state.game_type]} game is already running. Wait until it's finished to start another.")
-            return
-        
-        if not self.bot.game_state.in_lobby and not self.bot.game_state.in_game:
-            self.bot.game_state.in_lobby = True
-            self.bot.game_state.game_type = "connect4"
-            self.bot.gamePlayers.append(ctx.author)
-            self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
-            self.bot.dispatch("log",f"lobby: {ctx.author} created connect4 lobby.")
-            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play Connect 4. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
-        else: #Error handling
-            raise RuntimeError("Invalid status code returned while trying to start connect4")
+    def get_game_class(self,players):
+        return connect4(players)
+
+    # Lobby Capacity Check
+    def lobby_capacity_check_start(self,ctx):
+        if len(self.bot.gamePlayers) == 2:
+            return True
+        return False
     
+    def lobby_capacity_check_join(self,ctx):
+        if len(self.bot.gamePlayers) > 1:
+           return False
+        return True
+    
+    # Message to send if lobby capacity check fails
+    def lobby_capacity_fail_message(self):
+        return "There must be exactly 2 players in order to start"
+
+    # on_game_start event
+    def on_game_start(self,ctx):
+        self.bot.dispatch("publishBoard",ctx)
+
+
+
     #########################
     #    EVENT LISTENERS    #
     #########################
