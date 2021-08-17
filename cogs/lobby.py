@@ -17,6 +17,13 @@ class lobby(commands.Cog):
     #join
     @commands.command(name="join",help="Join a currently open game lobby")
     async def join(self,ctx):
+        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
+        if ctx.channel.id != self.bot.game_channel_id:
+            game_channel = self.bot.get_channel(self.bot.game_channel_id)
+            if game_channel is not None:
+                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
+                return
+
         #If no lobby
         if not self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"No lobby currently active. !liarsdice or !connect4 to start one.")
@@ -26,7 +33,7 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.game_state.game_type]} is already running.")
             return
 
-        if ctx.author in self.bot.game_state.game_players and False:
+        if ctx.author in self.bot.game_state.game_players:
             reply = f"`{ctx.author.display_name}`, you're already in the lobby."
             self.bot.dispatch("sendReply",ctx,reply)
             return 
@@ -44,6 +51,13 @@ class lobby(commands.Cog):
 
     @commands.command(name="game",help="Start a game {gamename}")
     async def game(self,ctx, game:str = "help"):
+        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
+        if ctx.channel.id != self.bot.game_channel_id:
+            game_channel = self.bot.get_channel(self.bot.game_channel_id)
+            if game_channel is not None:
+                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
+                return
+
         #If no lobby
         if self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"Can't start a new lobby, one is already open.")
@@ -74,6 +88,13 @@ class lobby(commands.Cog):
     #start
     @commands.command(name="start",help="Start the currently open game lobby")
     async def start(self,ctx):
+        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
+        if ctx.channel.id != self.bot.game_channel_id:
+            game_channel = self.bot.get_channel(self.bot.game_channel_id)
+            if game_channel is not None:
+                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
+                return
+
         #Check lobby is running & starter is lobby creator
         if not self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"No lobby to start.")
@@ -97,6 +118,13 @@ class lobby(commands.Cog):
     #kill_lobby
     @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
     async def kill_lobby(self,ctx):
+        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
+        if ctx.channel.id != self.bot.game_channel_id:
+            game_channel = self.bot.get_channel(self.bot.game_channel_id)
+            if game_channel is not None:
+                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
+                return
+                
         if ctx.bot == True:
             reply = f"{self.bot.prettyGames[self.bot.game_state.game_type]} lobby timed out."
             self.bot.dispatch("log",f"{self.bot.game_state.game_type} lobby timed out.")
