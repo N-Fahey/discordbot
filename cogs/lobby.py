@@ -1,8 +1,6 @@
 from discord.ext import commands
+from discord import Embed
 from discord.ext.commands.errors import MissingPermissions
-from cogs.liarsdice_game import LiarsDice
-from cogs.russianroulette_game import RussianRoulette
-from cogs.connect4_game import connect4
 
 #########################
 #       Extension       #
@@ -52,7 +50,7 @@ class lobby(commands.Cog):
 
 
     @commands.command(name="game",help="Start a game {gamename}")
-    async def game(self,ctx, game:str):
+    async def game(self,ctx, game:str = "help"):
         #If no lobby
         if self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"Can't start a new lobby, one is already open.")
@@ -61,6 +59,13 @@ class lobby(commands.Cog):
         if self.bot.game_state.in_game:
             self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.game_state.game_type]} is already running.")
             return
+
+        if game == "help":
+            embed = Embed()
+            embed.add_field(name="Supported Games",value="\n".join([i for i in self.bot.prettyGames]))
+            await ctx.send(embed=embed)
+            return            
+
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:            
             self.bot.game_state.in_lobby = True
