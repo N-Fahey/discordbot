@@ -61,21 +61,18 @@ class lobby(commands.Cog):
         if self.bot.game_state.in_game:
             self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.game_state.game_type]} is already running.")
             return
-
-        # kinda terrible way to do it but w/e not sure what the security sideffects of this are 
-        for k,v in self.bot.cogs.items():
-            if game+"_game" == k:
-                self.bot.game_state.in_lobby = True
-                self.bot.game_state.game_type = game
-                self.bot.gamePlayers.append(ctx.author)
-                self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
-                self.bot.dispatch("log",f"lobby: {ctx.author} created {game} lobby.")
-                self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[self.bot.game_state.game_type]}. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
-                return
+        match = [i for i in self.bot.prettyGames if game in i]
+        if len(match) == 1:            
+            self.bot.game_state.in_lobby = True
+            self.bot.game_state.game_type = match[0]
+            self.bot.gamePlayers.append(ctx.author)
+            self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
+            self.bot.dispatch("log",f"lobby: {ctx.author} created {game} lobby.")
+            self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[self.bot.game_state.game_type]}. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
+            return
 
         self.bot.dispatch("log",f"lobby: {ctx.author} created {game} lobby.")
         self.bot.dispatch("sendReply",ctx,f"game not found.")
-
 
 
     #start
