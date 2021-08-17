@@ -71,7 +71,6 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[self.bot.game_state.game_type]}. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
             return
 
-        self.bot.dispatch("log",f"lobby: {ctx.author} created {game} lobby.")
         self.bot.dispatch("sendReply",ctx,f"game not found.")
 
 
