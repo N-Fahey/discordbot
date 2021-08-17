@@ -26,28 +26,21 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"A game of {self.bot.prettyGames[self.bot.game_state.game_type]} is already running.")
             return
 
-        if ctx.author in self.bot.gamePlayers:
+        if ctx.author in self.bot.game_state.game_players and False:
             reply = f"`{ctx.author.display_name}`, you're already in the lobby."
             self.bot.dispatch("sendReply",ctx,reply)
             return 
 
-        if self.bot.game_state.in_lobby:
-
-            game_cog = self.bot.get_cog(self.bot.game_state.game_type+"_game")
-            if not game_cog.lobby_capacity_check_join(ctx):
-                self.bot.dispatch("sendReply",ctx,game_cog.lobby_capacity_fail_message())
-                return
-
-            self.bot.gamePlayers.append(ctx.author)
-            gamePlayersPretty = ["`" + player.display_name + "`" for player in self.bot.gamePlayers]
+        game_cog = self.bot.get_cog(self.bot.game_state.game_type+"_game")
+        if game_cog.lobby_capacity_check_join():
+            self.bot.game_state.add_player(ctx.author)
+            gamePlayersPretty = ["`" + player.display_name + "`" for player in self.bot.game_state.game_players]
             self.bot.dispatch("log",f"lobby: {ctx.author} joined {self.bot.game_state.game_type} lobby")
             reply = f"`{ctx.author.display_name}` joined the {self.bot.prettyGames[self.bot.game_state.game_type]} lobby. Currently waiting: {', '.join(gamePlayersPretty)}"
-            self.bot.dispatch("sendReply",ctx,reply)
-        else: #Error handling
-            raise RuntimeError("Invalid status code returned while trying to start liarsdice")
-    
+        else:
+            reply = self.bot.get_cog(self.bot.game_state.game_type+"_game").lobby_capacity_fail_message()
 
-
+        self.bot.dispatch("sendReply",ctx,reply)
 
     @commands.command(name="game",help="Start a game {gamename}")
     async def game(self,ctx, game:str = "help"):
@@ -68,11 +61,10 @@ class lobby(commands.Cog):
 
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:            
-            self.bot.game_state.in_lobby = True
-            self.bot.game_state.game_type = match[0]
-            self.bot.gamePlayers.append(ctx.author)
+            self.bot.game_state.start_lobby(match[0])
+            self.bot.game_state.game_players.append(ctx.author)
             self.bot.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[ctx])
-            self.bot.dispatch("log",f"lobby: {ctx.author} created {game} lobby.")
+            self.bot.dispatch("log",f"lobby: {ctx.author} created {match[0]} lobby.")
             self.bot.dispatch("sendReply",ctx,f"`{ctx.author.display_name}` wants to play {self.bot.prettyGames[self.bot.game_state.game_type]}. !join to enter the lobby. Currently waiting: `{ctx.author.display_name}`")
             return
 
@@ -86,21 +78,19 @@ class lobby(commands.Cog):
         if not self.bot.game_state.in_lobby:
             self.bot.dispatch("sendReply",ctx,"No lobby to start.")
             return
-        if ctx.author != self.bot.gamePlayers[0]:
+        if ctx.author != self.bot.game_state.game_players[0]:
             self.bot.dispatch("sendReply",ctx,"Only the user that created the lobby can start it!")
             return
 
         game_cog = self.bot.get_cog(self.bot.game_state.game_type+"_game")
 
-        if not game_cog.lobby_capacity_check_start(ctx):
+        if not game_cog.lobby_capacity_check_start():
             self.bot.dispatch("sendReply",ctx,game_cog.lobby_capacity_fail_message())
             return
         
-        self.bot.game = game_cog.get_game_class(self.bot.gamePlayers)
-        self.bot.game_state.in_lobby = False
-        self.bot.game_state.in_game = True
+        self.bot.game_state.start_game(game_cog.get_game_class(self.bot.game_state.game_players))
         self.bot.timer.clear()
-        self.bot.dispatch("log",f"{self.bot.game_state.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in self.bot.gamePlayers[1:])}")
+        self.bot.dispatch("log",f"{self.bot.game_state.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in self.bot.game_state.game_players[1:])}")
         game_cog.on_game_start(ctx)
         return
     
@@ -112,7 +102,7 @@ class lobby(commands.Cog):
             self.bot.dispatch("log",f"{self.bot.game_state.game_type} lobby timed out.")
         else:
             if self.bot.game_state.in_lobby:
-                if ctx.author == self.bot.gamePlayers[0]:
+                if ctx.author == self.bot.game_state.game_players[0]:
                     reply = f"{self.bot.prettyGames[self.bot.game_state.game_type]} lobby closed."
                     self.bot.dispatch("log",f"lobby: {self.bot.game_state.game_type} lobby killed by {ctx.author}.")
                     self.bot.timer.clear()
@@ -127,7 +117,6 @@ class lobby(commands.Cog):
 
 
         self.bot.game_state.end_game()
-        self.bot.gamePlayers = []
         self.bot.dispatch("sendReply",ctx,reply)
 
     #########################

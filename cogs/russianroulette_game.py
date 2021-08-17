@@ -60,24 +60,24 @@ class russianroulette_game(commands.Cog):
         return RussianRoulette(players)
 
     # Lobby Capacity Check
-    def lobby_capacity_check_start(self,ctx):
-        if len(self.bot.gamePlayers) > 1 and len(self.bot.gamePlayers) <= 6:
+    def lobby_capacity_check_start(self):
+        if len(self.bot.game_state.game_players) > 1 and len(self.bot.game_state.game_players) <= 6:
             return True
         return False
     
-    def lobby_capacity_check_join(self,ctx):
-        if len(self.bot.gamePlayers) > 5:
+    def lobby_capacity_check_join(self):
+        if len(self.bot.game_state.game_players) > 5:
             return False
         return True
     
     # Message to send if lobby capacity check fails
     def lobby_capacity_fail_message(self):
-        return "There must be between 1 and 6 players"
+        return "There must be between 2 and 6 players"
 
 
     # on_game_start event
     def on_game_start(self,ctx):
-        self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{self.bot.game.players[self.bot.game.current_player].display_name}` has the weapon")
+        self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{self.bot.game_state.game.players[self.bot.game_state.game.current_player].display_name}` has the weapon")
     
 
     #########################
@@ -91,24 +91,22 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
             return
 
-        pull_result = self.bot.game.handle_pull(ctx.author)
+        pull_result = self.bot.game_state.game.handle_pull(ctx.author)
         if pull_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return
         elif pull_result == "dead":
             self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
-            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver.")
+            self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver.")
             return
         elif pull_result == "continue":
-            self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver ")
+            self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver ")
             return
         else:
             self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
-            self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{self.bot.game.players[0].display_name}` is the winner 🏆🏆")
-            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game.players[0].id)])
+            self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{self.bot.game_state.game.players[0].display_name}` is the winner 🏆🏆")
+            self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type ,self.bot.game_state.game.players[0].id)])
             self.bot.game_state.end_game()
-            self.bot.gamePlayers = []
-            self.bot.game = None
 
     @commands.command("spin", help="Spin the cylinder of the revolver")
     async def handle_click(self,ctx):
@@ -117,7 +115,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"No game of Russian Roulette is active.")
             return
 
-        spin_result = self.bot.game.handle_spin(ctx.author)
+        spin_result = self.bot.game_state.game.handle_spin(ctx.author)
         if spin_result == "not_holder":
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return
@@ -125,7 +123,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
         else:
-            self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game.get_current_weapon_holder().display_name}` now holds the revolver")
+            self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{self.bot.game_state.game.get_current_weapon_holder().display_name}` now holds the revolver")
 
 
     #########################
