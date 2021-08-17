@@ -1,3 +1,4 @@
+prefixes: ["!"]
 lobbyTimeout: 300
 currencyCode: "߾"
 dolePayment: 100
