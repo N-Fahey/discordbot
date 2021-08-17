@@ -13,4 +13,5 @@ __pycache__/
 # sql database ignore
 *.db
 
-
+#yaml ignore
+*.yaml

@@ -12,8 +12,20 @@ intents = discord.Intents.default()
 intents.members = True
 intents.reactions = True
 
+async def get_prefix(bot,msg):
+    #Allows using mention instead of prefix
+    prefixes = commands.when_mentioned(bot,msg)
+
+    if hasattr(bot,"prefixes"):
+        for i in bot.prefixes:
+            prefixes.append(i)
+    else: #If no prefixes to load, use default prefix !
+        prefixes.append("!")
+
+    return prefixes
+
 #Setup attributes
-self = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
+self = commands.Bot(command_prefix=get_prefix, intents=intents)
 self.timer = timers.TimerManager(self)
 self.emojiDict = {}
 self.vc = None
