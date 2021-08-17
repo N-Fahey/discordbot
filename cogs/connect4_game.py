@@ -131,13 +131,13 @@ class connect4_game(commands.Cog):
         return connect4(players)
 
     # Lobby Capacity Check
-    def lobby_capacity_check_start(self,ctx):
-        if len(self.bot.gamePlayers) == 2:
+    def lobby_capacity_check_start(self):
+        if len(self.bot.game_state.game_players) == 2:
             return True
         return False
     
-    def lobby_capacity_check_join(self,ctx):
-        if len(self.bot.gamePlayers) > 1:
+    def lobby_capacity_check_join(self):
+        if len(self.bot.game_state.game_players) > 1:
            return False
         return True
     
@@ -158,53 +158,51 @@ class connect4_game(commands.Cog):
     #Initial message creation (includes instructions)
     @commands.Cog.listener()
     async def on_publishBoard(self,ctx):
-        board = self.bot.game.formatBoard()
+        board = self.bot.game_state.game.formatBoard()
         embed = Embed()
         embed.add_field(name='Instructions',value='Click the reactions below to drop your piece into the corresponding column.\nFirst to line up 4 pieces wins')
-        embed.add_field(name='Players turn',value=self.bot.game.players[self.bot.game.player].mention)
+        embed.add_field(name='Players turn',value=self.bot.game_state.game.players[self.bot.game_state.game.player].mention)
         msg = await ctx.send(board, embed= embed) #Then add reactions to the msg, and instructions?
 
         for react in ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣']:
             await msg.add_reaction(react)
-        self.bot.game.msg = msg
+        self.bot.game_state.game.msg = msg
 
     #Update message
     @commands.Cog.listener()
     async def on_updateBoard(self,action):
         if action == "Continue":
             embed = Embed()
-            names = [i.display_name for i in self.bot.game.players.values()]
-            embed.add_field(name='Players',value=f"{self.bot.game.emojis[1]}Player 1: {names[0]}\n{self.bot.game.emojis[2]}Player 2: {names[1]}")
-            embed.add_field(name='Players turn',value=self.bot.game.players[self.bot.game.player].mention)
+            names = [i.display_name for i in self.bot.game_state.game.players.values()]
+            embed.add_field(name='Players',value=f"{self.bot.game_state.game.emojis[1]}Player 1: {names[0]}\n{self.bot.game_state.game.emojis[2]}Player 2: {names[1]}")
+            embed.add_field(name='Players turn',value=self.bot.game_state.game.players[self.bot.game_state.game.player].mention)
         elif action == "Full":
             embed = Embed()
             embed.add_field(name='Error',value=f'That column is full! Please try again.')
-            embed.add_field(name='Players turn',value=self.bot.game.players[self.bot.game.player].mention)
-        board = self.bot.game.formatBoard()
-        await self.bot.game.msg.edit(content = board, embed = embed)
+            embed.add_field(name='Players turn',value=self.bot.game_state.game.players[self.bot.game_state.game.player].mention)
+        board = self.bot.game_state.game.formatBoard()
+        await self.bot.game_state.game.msg.edit(content = board, embed = embed)
     
     #Handle game completion
     @commands.Cog.listener()
     async def on_connect4End(self,result):
-        board = self.bot.game.formatBoard()
+        board = self.bot.game_state.game.formatBoard()
         if result == "Draw":
-            await self.bot.game.msg.channel.send(f"Game was a draw! No more spaces available.")
-            self.bot.dispatch("log"f"connect4: Game between {self.bot.gamePlayers[0]} and {self.bot.gamePlayers[1]} was a draw.")
+            await self.bot.game_state.game.msg.channel.send(f"Game was a draw! No more spaces available.")
+            self.bot.dispatch("log"f"connect4: Game between {self.bot.game_state.game_players[0]} and {self.bot.game_state.game_players[1]} was a draw.")
         else:
             self.bot.dispatch("queryAddWin",[(self.bot.game_state.game_type,result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
-            await self.bot.game.msg.channel.send(f"Game over! `{result.display_name}` is the winner!")
-        await self.bot.game.msg.edit(content = board, embed = None)
-        await self.bot.game.msg.clear_reactions()
-        self.bot.gamePlayers = []
+            await self.bot.game_state.game.msg.channel.send(f"Game over! `{result.display_name}` is the winner!")
+        await self.bot.game_state.game.msg.edit(content = board, embed = None)
+        await self.bot.game_state.game.msg.clear_reactions()
         self.bot.game_state.end_game()
-        self.bot.game = None
 
     #Reaction listener (should only be active when game running)
     @commands.Cog.listener()
     async def on_connect4Reaction(self,user,reaction):
-        if self.bot.game.msg is not None and user == self.bot.game.players[self.bot.game.player]:
-            outcome = self.bot.game.addPiece(user,['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣'].index(reaction.emoji) + 1)
+        if self.bot.game_state.game.msg is not None and user == self.bot.game_state.game.players[self.bot.game_state.game.player]:
+            outcome = self.bot.game_state.game.addPiece(user,['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣'].index(reaction.emoji) + 1)
             if outcome == "Continue" or outcome == "Full":
                 self.bot.dispatch("updateBoard", outcome)
             else:
