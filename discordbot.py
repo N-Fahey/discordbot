@@ -1,33 +1,6 @@
 import os,discord
-from discord.ext import commands,timers
+from discord.ext import commands
 from dotenv import load_dotenv
-
-class game_state():
-    def __init__(self):
-        self.in_lobby = False # In Lobby
-        self.in_game = False # In Game
-        self.game_type = None # Game type usually a string 
-        self.game = None
-        self.game_players = []
-    
-    def start_lobby(self,game_type):
-        self.in_lobby = True
-        self.game_type = game_type
-
-    def start_game(self,game):
-        self.in_lobby = False
-        self.in_game = True
-        self.game = game
-
-    def end_game(self):
-        self.in_lobby = False
-        self.in_game = False
-        self.game_type = None
-        self.game = None
-        self.game_players = []
-    
-    def add_player(self,player):
-        self.game_players.append(player)
 
 #Get required environment variables
 load_dotenv()
@@ -53,10 +26,6 @@ async def get_prefix(bot,msg):
 
 #Setup attributes
 self = commands.Bot(command_prefix=get_prefix, intents=intents)
-self.timer = timers.TimerManager(self)
-self.game = None
-self.game_state = game_state()
-self.gamePlayers = []
 self.emojiDict = {}
 self.vc = None
 
