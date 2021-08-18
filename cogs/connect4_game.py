@@ -146,7 +146,7 @@ class connect4_game(commands.Cog):
         return "There must be exactly 2 players in order to start"
 
     # on_game_start event
-    def on_game_start(self,ctx):
+    async def on_game_start(self,ctx):
         
         self.bot.dispatch("publishBoard",ctx)
 
