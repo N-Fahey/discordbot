@@ -210,7 +210,7 @@ class connect4_game(commands.Cog):
             await member_lobby.game.msg.channel.send(f"Game over! `{result.display_name}` is the winner!")
         await member_lobby.game.msg.edit(content = board, embed = None)
         await member_lobby.game.msg.clear_reactions()
-        await self.bot.lobby_end_game(member_lobby)
+        await self.bot.lobby_end_game(member_lobby,result)
 
     #Reaction listener (should only be active when game running)
     @commands.Cog.listener()
