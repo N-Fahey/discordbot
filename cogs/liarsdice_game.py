@@ -130,7 +130,7 @@ class liarsdice_game(commands.Cog):
 
 
     # on_game_start event
-    def on_game_start(self,ctx):
+    async def on_game_start(self,ctx):
         member_lobby = self.bot.get_member_lobby(ctx.author)
         self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {member_lobby.game.better.mention}, place your bet.")
         self.bot.dispatch("messageHands",member_lobby)
