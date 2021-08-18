@@ -92,7 +92,7 @@ class russianroulette_game(commands.Cog):
         member_lobby = self.bot.get_member_lobby(ctx.author)
         member_lobby.game.event_list.append({"name":"turn", "player":member_lobby.game.get_current_weapon_holder()})
         # self.bot.dispatch("sendReply",ctx, f"😐 🔫 Starting Russian Roulette! `{member_lobby.game.players[member_lobby.game.current_player].display_name}` has the weapon")
-        member_lobby.message = await ctx.send(embed=self.get_embed(member_lobby))
+        member_lobby.game.message = await ctx.send(embed=self.get_embed(member_lobby))
 
 
     def roulette_event_to_emoji(self,event):
@@ -155,14 +155,14 @@ class russianroulette_game(commands.Cog):
         elif pull_result == "dead":
             # self.bot.dispatch("sendReply",ctx,f"⚰️ `{ctx.author.display_name}` shot himself with the revolver ⚰️")
             # self.bot.dispatch("sendReply",ctx,f"🔫 revolver cylinder spun... 😐 🔫 `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver.")
-            await member_lobby.message.edit(embed=self.get_embed(member_lobby))
+            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
             await ctx.message.delete()
 
 
             return
         elif pull_result == "continue":
             # self.bot.dispatch("sendReply",ctx,f"😐 🔫 `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver ")
-            await member_lobby.message.edit(embed=self.get_embed(member_lobby))
+            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
             await ctx.message.delete()
 
             return
@@ -172,7 +172,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             await ctx.message.delete()
 
-            if await member_lobby.message.edit(embed=self.get_embed(member_lobby)):
+            if await member_lobby.game.message.edit(embed=self.get_embed(member_lobby)):
                 await self.bot.lobby_end_game(member_lobby)
             
     @commands.command("spin", help="Spin the cylinder of the revolver")
@@ -196,7 +196,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
         else:
-            await member_lobby.message.edit(embed=self.get_embed(member_lobby))
+            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
             # self.bot.dispatch("sendReply",ctx,f"🔫 Cylinder spun.. `{member_lobby.game.get_current_weapon_holder().display_name}` now holds the revolver")
             await ctx.message.delete()
     #########################
