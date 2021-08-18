@@ -54,8 +54,11 @@ class lobby(commands.Cog):
         return None
     
     async def lobby_end_game(self,lobby):
+        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name} ending {lobby.game_type} lobby.")
+
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True)) 
         self.bot.game_lobbies.remove(lobby)
+        
 
 
     def get_lobby_embed_message(self,lobby, closed=False):

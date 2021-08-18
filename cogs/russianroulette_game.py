@@ -171,9 +171,9 @@ class russianroulette_game(commands.Cog):
             # self.bot.dispatch("sendReply",ctx,f"🏆🏆 Russian roulette is over `{member_lobby.game.players[0].display_name}` is the winner 🏆🏆")
             self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             await ctx.message.delete()
-
-            if await member_lobby.game.message.edit(embed=self.get_embed(member_lobby)):
-                await self.bot.lobby_end_game(member_lobby)
+            
+            res = await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
+            await self.bot.lobby_end_game(member_lobby)
             
     @commands.command("spin", help="Spin the cylinder of the revolver")
     async def handle_click(self,ctx):
