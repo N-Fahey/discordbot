@@ -92,11 +92,12 @@ class lobby(commands.Cog):
                 embed.add_field(name='Closed',value=f"Lobby is now closed. All bets have been returned.",inline=False)
         return embed
 
-    def round_timer_reset(self,ctx,lobby):
-        round_time = self.bot.round_timers[lobby.game_type]
-        timer = lobby.timer
-        timer.clear()
-        timer.create_timer("timer_warning",round_time - 10,[ctx,lobby])
+    def round_timer_reset(self,player,lobby,channel):
+        if lobby.pot is not None:
+            round_time = self.bot.round_timers[lobby.game_type]
+            timer = lobby.timer
+            timer.clear()
+            timer.create_timer("timer_warning",round_time - 10,[player,lobby,channel])
 
     #########################
     #        COMMANDS       #
@@ -240,9 +241,10 @@ class lobby(commands.Cog):
 
         member_lobby.game = game_cog.get_game_class(member_lobby.lobby_players)
         member_lobby.in_game = True
+        member_lobby.timer.clear()
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
         self.bot.dispatch("log",f"{member_lobby.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in member_lobby.lobby_players[1:])}")
-        game_cog.on_game_start(ctx)
+        await game_cog.on_game_start(ctx)
         return
     
     #Leave lobby
@@ -309,18 +311,18 @@ class lobby(commands.Cog):
     #########################
 
     @commands.Cog.listener()
-    async def on_timer_warning(self,ctx,lobby):
+    async def on_timer_warning(self,player,lobby,channel):
         timer = lobby.timer
         timer.clear()
-        timer.create_timer("timer_boot",10,[ctx,lobby])
-        self.bot.dispatch("sendReply",ctx,f"{ctx.author.mention}, you have 30 seconds left to end your round before being disqualified.")
+        timer.create_timer("timer_boot",10,[player,lobby,channel])
+        self.bot.dispatch("sendReply",channel,f"{player.mention}, you have 30 seconds left to end your round before being disqualified.")
 
     @commands.Cog.listener()
-    async def on_timer_boot(self,ctx,lobby):
+    async def on_timer_boot(self,player,lobby,channel):
         timer = lobby.timer
         timer.clear()
         game_cog = self.bot.get_cog(lobby.game_type+"_game")
-        await game_cog.on_timer_dq(ctx,lobby)
+        await game_cog.on_timer_dq(player,lobby,channel)
 
     @commands.Cog.listener()
     async def on_lobbytimer(self,member_lobby):

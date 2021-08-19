@@ -144,10 +144,16 @@ class connect4_game(commands.Cog):
     # Message to send if lobby capacity check fails
     def lobby_capacity_fail_message(self):
         return "There must be exactly 2 players in order to start"
+    
+    async def on_timer_dq(self,player,lobby,channel):
+        lobby.lobby_players.remove(player)
+        self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed for inactivity.")
+        self.bot.dispatch("connect4End",lobby.lobby_players[0],lobby.lobby_players[0])
 
     # on_game_start event
-    def on_game_start(self,ctx):
-        
+    async def on_game_start(self,ctx):
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+        self.bot.round_timer_reset(ctx.author,member_lobby,ctx.channel)
         self.bot.dispatch("publishBoard",ctx)
 
 
@@ -186,6 +192,7 @@ class connect4_game(commands.Cog):
             names = [i.display_name for i in member_lobby.game.players.values()]
             embed.add_field(name='Players',value=f"{member_lobby.game.emojis[1]}Player 1: {names[0]}\n{member_lobby.game.emojis[2]}Player 2: {names[1]}")
             embed.add_field(name='Players turn',value=member_lobby.game.players[member_lobby.game.player].mention)
+            self.bot.round_timer_reset(member_lobby.game.players[member_lobby.game.player],member_lobby,member_lobby.game.msg.channel)
         elif action == "Full":
             embed = Embed()
             embed.add_field(name='Error',value=f'That column is full! Please try again.')
@@ -195,7 +202,7 @@ class connect4_game(commands.Cog):
     
     #Handle game completion
     @commands.Cog.listener()
-    async def on_connect4End(self,result, user):
+    async def on_connect4End(self,result,user):
         member_lobby = self.bot.get_member_lobby(user)
         if not member_lobby:
             return
@@ -203,7 +210,7 @@ class connect4_game(commands.Cog):
         board = member_lobby.game.formatBoard()
         if result == "Draw":
             await member_lobby.game.msg.channel.send(f"Game was a draw! No more spaces available.")
-            self.bot.dispatch("log"f"connect4: Game between {member_lobby.game_players[0]} and {member_lobby.game_players[1]} was a draw.")
+            self.bot.dispatch("log"f"connect4: Game between {member_lobby.lobby_players[0]} and {member_lobby.lobby_players[1]} was a draw.")
         else:
             self.bot.dispatch("queryAddWin",[(member_lobby.game_type,result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
