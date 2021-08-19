@@ -94,7 +94,6 @@ class russianroulette_game(commands.Cog):
             await lobby.game.message.edit(embed=self.get_embed(lobby))
             self.bot.round_timer_reset(lobby.game.get_current_weapon_holder(),lobby,lobby.game.message.channel)
         else:
-            self.bot.dispatch("queryAddWin",[(lobby.game_type ,lobby.game.players[0].id)])
             res = await lobby.game.message.edit(embed=self.get_embed(lobby))
             await self.bot.lobby_end_game(lobby,lobby.game.players[0])
 
@@ -167,7 +166,6 @@ class russianroulette_game(commands.Cog):
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
         else:
-            self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             #await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             await ctx.message.delete()
             

@@ -212,7 +212,6 @@ class connect4_game(commands.Cog):
             await member_lobby.game.msg.channel.send(f"Game was a draw! No more spaces available.")
             self.bot.dispatch("log"f"connect4: Game between {member_lobby.lobby_players[0]} and {member_lobby.lobby_players[1]} was a draw.")
         else:
-            self.bot.dispatch("queryAddWin",[(member_lobby.game_type,result.id)])
             self.bot.dispatch("log",f"connect4: {result} won the game.")
             await member_lobby.game.msg.channel.send(f"Game over! `{result.display_name}` is the winner!")
         await member_lobby.game.msg.edit(content = board, embed = None)

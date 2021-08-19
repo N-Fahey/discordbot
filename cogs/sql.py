@@ -20,13 +20,13 @@ class BotUsers(Base):
     bank = Column('bank', BigInteger, default=100)
     last_dole = Column('last_dole', DateTime)
 
-
 class BotScores(Base):
     __tablename__ = 'bot_scores'
     uid = Column('id', Integer, primary_key=True)
     winner_id = Column('winner_id', BigInteger)
     time = Column('time', DateTime)
     game = Column('game', String(200))
+    winnings = Column('winnings',BigInteger)
 
 
 Base.metadata.create_all(engine)
@@ -80,12 +80,12 @@ class sql(commands.Cog):
 
     #Add win to winners table
     @commands.Cog.listener()
-    async def on_queryAddWin(self,qData): #qData expects [(bot.gameStatus[1]:str(gamename),winner.id)]
+    async def on_queryAddWin(self,qData): #qData expects [(gamename,winner.id,winning_amount(or None))]
 
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
-            session.add(BotScores(game=qData[0][0],winner_id=qData[0][1],time=datetime.now()))
+            session.add(BotScores(game=qData[0][0],winner_id=qData[0][1],time=datetime.now(),winnings=qData[0][2]))
             session.commit()
 
         except:

@@ -139,7 +139,6 @@ class liarsdice_game(commands.Cog):
             self.bot.dispatch("sendReply",channel,f"Round {lobby.game.round}: {lobby.game.better.mention}, your turn to bet.")
         else:
             self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed from the game for inactivity.")
-            self.bot.dispatch("queryAddWin",[(lobby.game_type ,lobby.game.players[0].id)])
             self.bot.dispatch("sendReply",channel,f"Game is over. {lobby.game.players[0].mention} is the winner!")
             await self.bot.lobby_end_game(lobby,lobby.game.players[0])
 
@@ -225,7 +224,6 @@ class liarsdice_game(commands.Cog):
             self.bot.round_timer_reset(member_lobby.game.better,member_lobby,ctx.channel)
             self.bot.dispatch("sendReply",ctx,f"Round {member_lobby.game.round}: {member_lobby.game.better.mention}, your turn to bet.")
         else:
-            self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             self.bot.dispatch("sendReply",ctx,f"Game is over. {member_lobby.game.players[0].mention} is the winner!")
             await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
 
