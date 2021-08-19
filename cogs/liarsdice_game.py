@@ -128,12 +128,26 @@ class liarsdice_game(commands.Cog):
     def lobby_capacity_fail_message(self):
         return "There must be more than 1 player in order to start"
 
+    async def on_timer_dq(self,player,lobby,channel):
+
+        remove_outcome = lobby.game.removePlayer(player)
+
+        if remove_outcome: #Returns True if game can progress to next round
+            lobby.game.assignHands()
+            self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed from the game for inactivity.")
+            self.bot.dispatch("messageHands",lobby)
+            self.bot.dispatch("sendReply",channel,f"Round {lobby.game.round}: {lobby.game.better.mention}, your turn to bet.")
+        else:
+            self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed from the game for inactivity.")
+            self.bot.dispatch("sendReply",channel,f"Game is over. {lobby.game.players[0].mention} is the winner!")
+            await self.bot.lobby_end_game(lobby,lobby.game.players[0])
 
     # on_game_start event
     async def on_game_start(self,ctx):
         member_lobby = self.bot.get_member_lobby(ctx.author)
-        self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {member_lobby.game.better.mention}, place your bet.")
         self.bot.dispatch("messageHands",member_lobby)
+        self.bot.dispatch("sendReply",ctx, f"Starting Liar's Dice! {member_lobby.game.better.mention}, place your bet.")
+        self.bot.round_timer_reset(member_lobby.game.better,member_lobby,ctx.channel)
 
     #bet
     @commands.command(name="bet", help="Place a bet in Liar's Dice. Usage: !bet {face} {quantity}")
@@ -159,6 +173,7 @@ class liarsdice_game(commands.Cog):
             if res == True:
                 emoji = f"d{face}"
                 reply = f"`{ctx.author.display_name}` placed bet of {qty} x {self.bot.emojiDict[emoji]}. {member_lobby.game.better.mention}, your turn to bet."
+                self.bot.round_timer_reset(member_lobby.game.better,member_lobby,ctx.channel)
             else:
                 reply = f"`{ctx.author.display_name}`, you can't make that bet. Try again. Use !bet [quantity] [face]"
         else:
@@ -206,11 +221,11 @@ class liarsdice_game(commands.Cog):
         self.bot.dispatch("sendReply",ctx,reply)
         if res[1] == "continue":
             self.bot.dispatch("messageHands",member_lobby)
+            self.bot.round_timer_reset(member_lobby.game.better,member_lobby,ctx.channel)
             self.bot.dispatch("sendReply",ctx,f"Round {member_lobby.game.round}: {member_lobby.game.better.mention}, your turn to bet.")
         else:
-            self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
             self.bot.dispatch("sendReply",ctx,f"Game is over. {member_lobby.game.players[0].mention} is the winner!")
-            await self.bot.lobby_end_game(member_lobby)
+            await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
 
     #########################
     #     COMMAND ERRORS    #

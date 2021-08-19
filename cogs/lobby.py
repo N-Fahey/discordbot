@@ -1,12 +1,13 @@
 from discord.ext import commands,timers
 from discord import Embed,Member
 
+
 #########################
 #       Extension       #
 #########################
 
 class Lobby:
-    def __init__(self,lobby_owner,game_type):
+    def __init__(self,lobby_owner,game_type,bet):
         self.lobby_players = [lobby_owner]
         self.lobby_owner = lobby_owner
         self.in_game = False
@@ -14,9 +15,14 @@ class Lobby:
         self.game = None
         self.message = None
         self.timer = None
+        if bet > 0:
+            self.pot = {
+                lobby_owner:bet
+            }
+        else:
+            self.pot = None
 
         # you can include stuff like lobby betting pot in here
-
 
     def has_member(self,member):
         if member in self.lobby_players:
@@ -38,6 +44,7 @@ class lobby(commands.Cog):
         self.bot.get_lobby_from_owner = self.get_lobby_from_owner
         self.bot.get_member_lobby = self.get_member_lobby
         self.bot.lobby_end_game = self.lobby_end_game
+        self.bot.round_timer_reset = self.round_timer_reset
 
     def get_member_lobby(self,member):
         for lobby in self.bot.game_lobbies:
@@ -53,39 +60,71 @@ class lobby(commands.Cog):
 
         return None
     
-    async def lobby_end_game(self,lobby):
-        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name} ending {lobby.game_type} lobby.")
+    async def lobby_end_game(self,lobby,winner):
+        pot = None
+        sql_cog = self.bot.get_cog('sql')
 
-        await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True)) 
+        if lobby.pot is not None: #If betting is enabled for the lobby...            
+            if winner is None:
+                #Return the pot if there is no winner
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw. Returning bets."
+                for member,pot_amount in lobby.pot.items():
+                    await sql_cog.queryPay([(pot_amount,member.id)])
+            else:
+                #Otherwise - pay full pot to the winner & log win in db
+                pot = sum(lobby.pot.values())
+                await sql_cog.queryPay([(pot,winner.id)])
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
+                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])   
+
+        else: #Betting disabled lobby. Still log to db if there's a winner
+            if winner is not None:
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
+                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
+            else:
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw."
+
+        self.bot.dispatch("log",log_msg)
+        await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
+        lobby.timer.clear()
         self.bot.game_lobbies.remove(lobby)
-        
-
 
     def get_lobby_embed_message(self,lobby, closed=False):
         embed = Embed(title=f"{lobby.lobby_owner.display_name} wants to play {self.bot.prettyGames[lobby.game_type]}")
-        player_list = ', '.join(i.name for i in lobby.lobby_players)
         embed.set_thumbnail(url=lobby.lobby_owner.avatar_url)
         embed.add_field(name='Game',value=self.bot.prettyGames[lobby.game_type])
         embed.add_field(name='Owner',value=lobby.lobby_owner.mention)
         if not closed:
             embed.add_field(name='State',value="Waiting for players..." if not lobby.in_game else "In Game")
-            embed.add_field(name='Players',value=player_list if len(player_list) > 0 else "None",inline=False)
-            embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_owner.mention}",inline=False)
+            if lobby.pot is None:
+                player_list = ', '.join("`"+i.name+"`" for i in lobby.lobby_players)
+                embed.add_field(name='Players',value=player_list if len(player_list) > 0 else "None",inline=False)
+                embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_owner.mention}",inline=False)
+            else:
+                player_list = '\n'.join(f'[{self.bot.currencyCode}' + str(lobby.pot[i]) + '] `' + i.name + '`' for i in lobby.lobby_players)
+                embed.add_field(name='[Bet] Player',value=player_list if len(player_list) > 0 else "None",inline=False)
+                embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_owner.mention} [bet]",inline=False)
         else:
             embed.add_field(name='State',value="Closed")
-            embed.add_field(name='Closed',value=f"Lobby is now closed.",inline=False)
+            if lobby.pot is None:
+                embed.add_field(name='Closed',value=f"Lobby is now closed.",inline=False)
+            else:
+                embed.add_field(name='Closed',value=f"Lobby is now closed. All bets have been returned.",inline=False)
         return embed
 
-
-
-
+    def round_timer_reset(self,player,lobby,channel):
+        if lobby.pot is not None:
+            round_time = self.bot.round_timers[lobby.game_type]
+            timer = lobby.timer
+            timer.clear()
+            timer.create_timer("timer_warning",round_time - self.bot.round_timers['seconds_warning'],[player,lobby,channel])
 
     #########################
     #        COMMANDS       #
     #########################
     #join
     @commands.command(name="join",help="Join a currently open game lobby")
-    async def join(self,ctx, lobby_owner:Member="default"):
+    async def join(self,ctx, lobby_owner:Member="default", bet:int = 0):
         #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
         if ctx.channel.id != self.bot.game_channel_id:
             game_channel = self.bot.get_channel(self.bot.game_channel_id)
@@ -120,18 +159,32 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"Can't join a running game")
             return
 
-
         game_cog = self.bot.get_cog(lobby_to_join.game_type+"_game")
+
         if game_cog.lobby_capacity_check_join(lobby_to_join.lobby_players):
-            lobby_to_join.lobby_players.append(ctx.author)
-            self.bot.dispatch("log",f"lobby: {ctx.author} joined {lobby_to_join.game_type} lobby")
-            await lobby_to_join.message.edit(embed=self.get_lobby_embed_message(lobby_to_join)) 
+            if lobby_to_join.pot is None:
+                lobby_to_join.lobby_players.append(ctx.author)
+                self.bot.dispatch("log",f"lobby: {ctx.author} joined {lobby_to_join.game_type} lobby")
+                await lobby_to_join.message.edit(embed=self.get_lobby_embed_message(lobby_to_join)) 
+            else:
+                if bet >= lobby_to_join.pot[lobby_to_join.lobby_owner]:
+                    sql_cog = self.bot.get_cog('sql')
+                    if await sql_cog.queryWithdraw([(bet,ctx.author.id)]):
+                        lobby_to_join.lobby_players.append(ctx.author)
+                        lobby_to_join.pot[ctx.author] = bet
+                        self.bot.dispatch("log",f"lobby: {ctx.author} joined {lobby_to_join.game_type} lobby with bet: {bet}")
+                        await lobby_to_join.message.edit(embed=self.get_lobby_embed_message(lobby_to_join))
+                    else:
+                        self.bot.dispatch("sendReply",ctx,"You don't have enough money to do that!")
+                else:
+                    self.bot.dispatch("sendReply",ctx,"Your bet must match or exceed the lobby owner's.")
         else:
             reply = self.bot.get_cog(lobby_to_join.game_type+"_game").lobby_capacity_fail_message()
             self.bot.dispatch("sendReply",ctx,reply)
 
-    @commands.command(name="game",help="Start a game {gamename}")
-    async def game(self,ctx, game:str = "help"):
+    #Game starter
+    @commands.command(name="game",help="Start a game. Usage: !game {gamename} optional:{bet_amount}\nIf not bet specified, game is played without betting")
+    async def game(self,ctx, game:str = "help", bet:int = 0):
         #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
         if ctx.channel.id != self.bot.game_channel_id:
             game_channel = self.bot.get_channel(self.bot.game_channel_id)
@@ -146,14 +199,23 @@ class lobby(commands.Cog):
 
         if game == "help":
             embed = Embed()
-            embed.add_field(name="Supported Games",value="\n".join([i for i in self.bot.prettyGames]))
+            embed.add_field(name="Usage",value="Use !game {gamename} to start a game without betting.\nUse !game {gamename} {bet_amount} to start with betting enabled.")
+            embed.add_field(name="Supported Games",value="\n".join([i for i in self.bot.prettyGames]),inline=False)
             await ctx.send(embed=embed)
-            return          
+            return
 
 
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:
-            lobby = Lobby(ctx.author,match[0])
+            if bet > 0:
+                sql_cog = self.bot.get_cog('sql')
+                if not await sql_cog.queryWithdraw([(bet,ctx.author.id)]):
+                    self.bot.dispatch("sendReply",ctx,"You don't have enough money to do that!")
+                    return
+            else:
+                bet = 0
+            
+            lobby = Lobby(ctx.author,match[0],bet)
             lobby.timer = timers.TimerManager(self.bot)
             lobby.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[lobby])
             self.bot.game_lobbies.append(lobby)
@@ -224,9 +286,13 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"You're the lobby owner! You can only leave by cancelling the lobby with !cancel.")
             return
         
-        member_lobby.lobby_players.remove(ctx.author)
+        if member_lobby.pot is not None:
+            sql_cog = self.bot.get_cog('sql')
+            await sql_cog.queryPay([(member_lobby.pot.pop(ctx.author),ctx.author.id)])
+
+        member_lobby.lobby_players.remove(ctx.author)  
         self.bot.dispatch("log",f"lobby: {ctx.author} left {member_lobby.game_type} lobby")
-        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby))         
+        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby))
 
     #kill_lobby
     @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
@@ -248,6 +314,11 @@ class lobby(commands.Cog):
         if member_lobby.in_game:
             self.bot.dispatch("sendReply",ctx,"Can't cancel a running game")
             return
+        
+        if member_lobby.pot is not None:
+            sql_cog = self.bot.get_cog('sql')
+            for member,pot_amount in member_lobby.pot.items():
+                await sql_cog.queryPay([(pot_amount,member.id)])
 
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
         self.bot.game_lobbies.remove(member_lobby)
@@ -260,11 +331,41 @@ class lobby(commands.Cog):
     #########################
 
     @commands.Cog.listener()
+    async def on_timer_warning(self,player,lobby,channel):
+        timer = lobby.timer
+        timer.clear()
+        timer.create_timer("timer_boot",self.bot.round_timers['seconds_warning'],[player,lobby,channel])
+        self.bot.dispatch("sendReply",channel,f"{player.mention}, you have {self.bot.round_timers['seconds_warning']} seconds left to end your round before being disqualified.")
+
+    @commands.Cog.listener()
+    async def on_timer_boot(self,player,lobby,channel):
+        timer = lobby.timer
+        timer.clear()
+        game_cog = self.bot.get_cog(lobby.game_type+"_game")
+        self.bot.dispatch("log",f"lobby: {player.name} removed from {lobby.lobby_owner.name}'s {lobby.game_type}")
+        await game_cog.on_timer_dq(player,lobby,channel)
+
+    @commands.Cog.listener()
     async def on_lobbytimer(self,member_lobby):
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
         self.bot.game_lobbies.remove(member_lobby)
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
         self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
+    
+    #########################
+    #    COMMAND ERRORS     #
+    #########################
+
+    @join.error
+    async def join_error(self,ctx,error):
+        if isinstance(error,commands.errors.MemberNotFound) and len(self.bot.game_lobbies) == 1 and self.bot.game_lobbies[0].pot is not None:
+            try:
+                await self.join(ctx,self.bot.game_lobbies[0].lobby_owner,int(error.argument))
+                return
+            except:
+                pass
+        self.bot.dispatch("sendReply",ctx,f"Invalid argument: `{error.argument}`. Please try again")
+        
         
 #########################
 #      FINAL SETUP      #
