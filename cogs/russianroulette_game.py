@@ -14,7 +14,7 @@ class RussianRoulette:
         self.players = players
         self.players_who_have_rerolled = []
         self.current_player = 0
-        self.unlucky_chamber = randint(100,200)
+        self.unlucky_chamber = randint(0,5)
         self.event_list = [{"name": "begin"}]
         
     def get_current_weapon_holder(self):
