@@ -22,7 +22,7 @@ class audiobites(commands.Cog):
             if len(match) == 1:
                 voice_channel = ctx.author.voice.channel
                 if voice_channel != None:
-                    self.bot.audio_bite_cooldown = time.time() + self.bot.audioBiteCooldown
+                    self.bot.audio_bite_cooldown = time.time() + self.bot.audio_bite_cooldown_seconds
                     vc = await voice_channel.connect()
                     vc.play(FFmpegPCMAudio(source=f"resources/sound/bites/{match[0]}"))
                     # Sleep while audio is playing.
