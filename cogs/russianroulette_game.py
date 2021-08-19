@@ -28,6 +28,7 @@ class RussianRoulette:
             return self.remove_player(player)
         else:
             self.current_player += 1
+            self.event_list.append({"name":"click", "player":player})
             self.event_list.append({"name":"turn", "player":self.get_current_weapon_holder()})
 
             return "continue"
@@ -112,11 +113,13 @@ class russianroulette_game(commands.Cog):
         if event['name'] == "end":
             return f"🎉🎉 Round Ends 🎉🎉"
         if event['name'] == "turn":
-            return f"😐 🔫 {event['player'].display_name} now holds the revolver"
+            return f"😖🔫 {event['player'].display_name} now holds the revolver"
+        if event['name'] == "click":
+            return f"😮‍💨 {event['player'].display_name} pulled the trigger....click!"
         if event['name'] == "spin":
             return f"↩️↩️↩️ {event['player'].display_name} spun the cylinder.."
         if event['name'] == "dead":
-            return f"⚰️⚰️⚰️ {event['player'].display_name} shot himself with the revolver.."
+            return f"🤯🔫⚰️ {event['player'].display_name} shot himself with the revolver.."
         if event['name'] == "winner":
             return f"⭐⭐⭐ {event['player'].display_name}  was the last person standing!"
         if "player" in event:
