@@ -63,6 +63,7 @@ class lobby(commands.Cog):
     async def lobby_end_game(self,lobby,winner):
         pot = None
         sql_cog = self.bot.get_cog('sql')
+        lobby.timer.clear()
 
         if lobby.pot is not None: #If betting is enabled for the lobby...            
             if winner is None:
