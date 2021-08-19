@@ -17,7 +17,7 @@ class BotUsers(Base):
     user_id = Column('user_id', BigInteger, primary_key=True)
     name = Column('name', String(200))
     display_name =  Column('display_name', String(200))
-    bank = Column('bank', BigInteger, default=100)
+    bank = Column('bank', BigInteger, default=0)
     last_dole = Column('last_dole', DateTime)
 
 class BotScores(Base):
