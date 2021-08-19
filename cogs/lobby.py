@@ -67,9 +67,10 @@ class lobby(commands.Cog):
             sql_cog = self.bot.get_cog('sql')
             pot = sum(lobby.pot.values())
             await sql_cog.queryPay([(pot,winner.id)])
-            lobby.timer.clear()
-        self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
+        if winner is not None:
+            self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
+        lobby.timer.clear()
         self.bot.game_lobbies.remove(lobby)
 
     def get_lobby_embed_message(self,lobby, closed=False):
