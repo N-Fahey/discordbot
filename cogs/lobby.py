@@ -63,7 +63,6 @@ class lobby(commands.Cog):
     async def lobby_end_game(self,lobby,winner):
         pot = None
         sql_cog = self.bot.get_cog('sql')
-        lobby.timer.clear()
 
         if lobby.pot is not None: #If betting is enabled for the lobby...            
             if winner is None:
@@ -322,7 +321,7 @@ class lobby(commands.Cog):
                 await sql_cog.queryPay([(pot_amount,member.id)])
 
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
-        self.bot.game_lobbies.remove(member_lobby)
+        await self.lobby_end_game(member_lobby,None)
         reply = f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby closed."
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
         self.bot.dispatch("sendReply",ctx,reply)
