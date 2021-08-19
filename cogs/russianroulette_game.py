@@ -1,7 +1,6 @@
 from random import randint
 from discord.ext import commands
-from discord.ext.commands.errors import MissingRequiredArgument
-from discord import Embed,Member
+from discord import Embed
 
 #########################
 #       Game Class      #
@@ -90,7 +89,7 @@ class russianroulette_game(commands.Cog):
         return "There must be between 2 and 6 players"
 
     async def on_timer_dq(self,player,lobby,channel):
-        remove_outcome = lobby.game.remove_player(player) ### Check the reset timer event in this bit - timer should apply to next player
+        remove_outcome = lobby.game.remove_player(player)
         if remove_outcome == "dead":
             lobby.game.message.edit(embed=self.get_embed(lobby))
             self.bot.round_timer_reset(lobby.game.get_current_weapon_holder(),lobby,lobby.game.message.channel)

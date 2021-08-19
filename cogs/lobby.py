@@ -65,6 +65,7 @@ class lobby(commands.Cog):
         if lobby.pot is not None:
             sql_cog = self.bot.get_cog('sql')
             await sql_cog.queryPay([(sum(lobby.pot.values()),winner.id)])
+            lobby.timer.clear()
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
         self.bot.game_lobbies.remove(lobby)
 
@@ -96,7 +97,7 @@ class lobby(commands.Cog):
             round_time = self.bot.round_timers[lobby.game_type]
             timer = lobby.timer
             timer.clear()
-            timer.create_timer("timer_warning",round_time - 10,[player,lobby,channel])
+            timer.create_timer("timer_warning",round_time - self.bot.round_timers['seconds_warning'],[player,lobby,channel])
 
     #########################
     #        COMMANDS       #
@@ -313,8 +314,8 @@ class lobby(commands.Cog):
     async def on_timer_warning(self,player,lobby,channel):
         timer = lobby.timer
         timer.clear()
-        timer.create_timer("timer_boot",10,[player,lobby,channel])
-        self.bot.dispatch("sendReply",channel,f"{player.mention}, you have 30 seconds left to end your round before being disqualified.")
+        timer.create_timer("timer_boot",self.bot.round_timers['seconds_warning'],[player,lobby,channel])
+        self.bot.dispatch("sendReply",channel,f"{player.mention}, you have {self.bot.round_timers['seconds_warning']} seconds left to end your round before being disqualified.")
 
     @commands.Cog.listener()
     async def on_timer_boot(self,player,lobby,channel):
