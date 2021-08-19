@@ -61,14 +61,30 @@ class lobby(commands.Cog):
         return None
     
     async def lobby_end_game(self,lobby,winner):
-        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing.")
         pot = None
-        if lobby.pot is not None:
-            sql_cog = self.bot.get_cog('sql')
-            pot = sum(lobby.pot.values())
-            await sql_cog.queryPay([(pot,winner.id)])
-        if winner is not None:
-            self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
+        sql_cog = self.bot.get_cog('sql')
+
+        if lobby.pot is not None: #If betting is enabled for the lobby...            
+            if winner is None:
+                #Return the pot if there is no winner
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw. Returning bets."
+                for member,pot_amount in lobby.pot.items():
+                    await sql_cog.queryPay([(pot_amount,member.id)])
+            else:
+                #Otherwise - pay full pot to the winner & log win in db
+                pot = sum(lobby.pot.values())
+                await sql_cog.queryPay([(pot,winner.id)])
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
+                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])   
+
+        else: #Betting disabled lobby. Still log to db if there's a winner
+            if winner is not None:
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
+                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
+            else:
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw."
+
+        self.bot.dispatch("log",log_msg)
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
         lobby.timer.clear()
         self.bot.game_lobbies.remove(lobby)

@@ -210,14 +210,10 @@ class connect4_game(commands.Cog):
         board = member_lobby.game.formatBoard()
         if result == "Draw":
             if member_lobby.pot is not None:
-                sql_cog = self.bot.get_cog('sql')
-                for member,pot_amount in member_lobby.pot.items():
-                    await sql_cog.queryPay([(pot_amount,member.id)])
-                member_lobby.pot = None
-                result = None
                 await member_lobby.game.msg.channel.send(f"Game was a draw! No more spaces available. Bets have been returned.")
             else:
                 await member_lobby.game.msg.channel.send(f"Game was a draw! No more spaces available.")
+            result = None
             self.bot.dispatch("log"f"connect4: Game between {member_lobby.lobby_players[0]} and {member_lobby.lobby_players[1]} was a draw.")
         else:
             self.bot.dispatch("log",f"connect4: {result} won the game.")
