@@ -36,7 +36,7 @@ class events(commands.Cog):
 
         if msg.channel.id == 872774897926025266:
             self.bot.dispatch("log",f"on_message: Deleted spy message from: {msg.author}. Message: {msg.content}")
-            await self.bot.dispatch("delete_message",msg)
+            self.bot.dispatch("delete_message",msg)
 
     
     #Add new members to db

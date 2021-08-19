@@ -67,7 +67,7 @@ class lobby(commands.Cog):
         if lobby.pot is not None: #If betting is enabled for the lobby...            
             if winner is None:
                 #Return the pot if there is no winner
-                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw. Returning bets."
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner. Returning bets."
                 for member,pot_amount in lobby.pot.items():
                     await sql_cog.queryPay([(pot_amount,member.id)])
             else:
@@ -82,7 +82,7 @@ class lobby(commands.Cog):
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
                 self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
             else:
-                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing as draw."
+                log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner."
 
         self.bot.dispatch("log",log_msg)
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
@@ -348,10 +348,10 @@ class lobby(commands.Cog):
     @commands.Cog.listener()
     async def on_lobbytimer(self,member_lobby):
         await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
-        self.bot.game_lobbies.remove(member_lobby)
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
         self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
-    
+        await self.lobby_end_game(member_lobby,None)
+
     #########################
     #    COMMAND ERRORS     #
     #########################
