@@ -147,7 +147,7 @@ class connect4_game(commands.Cog):
     
     async def on_timer_dq(self,player,lobby,channel):
         lobby.lobby_players.remove(player)
-        self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed for inactivity.")
+        self.bot.dispatch("sendReply",channel,f"`{player.display_name}` was removed for inactivity.")
         self.bot.dispatch("connect4End",lobby.lobby_players[0],lobby.lobby_players[0])
 
     # on_game_start event

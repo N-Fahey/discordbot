@@ -1,6 +1,7 @@
 from discord.ext import commands,timers
 from discord import Embed,Member
 
+
 #########################
 #       Extension       #
 #########################
@@ -60,7 +61,7 @@ class lobby(commands.Cog):
         return None
     
     async def lobby_end_game(self,lobby,winner):
-        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name} ending {lobby.game_type} lobby.")
+        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing.")
         if lobby.pot is not None:
             sql_cog = self.bot.get_cog('sql')
             await sql_cog.queryPay([(sum(lobby.pot.values()),winner.id)])
@@ -69,19 +70,17 @@ class lobby(commands.Cog):
 
     def get_lobby_embed_message(self,lobby, closed=False):
         embed = Embed(title=f"{lobby.lobby_owner.display_name} wants to play {self.bot.prettyGames[lobby.game_type]}")
-        player_list = ', '.join(i.name for i in lobby.lobby_players)
-
         embed.set_thumbnail(url=lobby.lobby_owner.avatar_url)
         embed.add_field(name='Game',value=self.bot.prettyGames[lobby.game_type])
         embed.add_field(name='Owner',value=lobby.lobby_owner.mention)
         if not closed:
             embed.add_field(name='State',value="Waiting for players..." if not lobby.in_game else "In Game")
             if lobby.pot is None:
-                player_list = ', '.join(i.name for i in lobby.lobby_players)
+                player_list = ', '.join("`"+i.name+"`" for i in lobby.lobby_players)
                 embed.add_field(name='Players',value=player_list if len(player_list) > 0 else "None",inline=False)
                 embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_owner.mention}",inline=False)
             else:
-                player_list = '\n'.join(f'[{self.bot.currencyCode}' + str(lobby.pot[i]) + '] ' + i.name for i in lobby.lobby_players)
+                player_list = '\n'.join(f'[{self.bot.currencyCode}' + str(lobby.pot[i]) + '] `' + i.name + '`' for i in lobby.lobby_players)
                 embed.add_field(name='[Bet] Player',value=player_list if len(player_list) > 0 else "None",inline=False)
                 embed.add_field(name='Instructions',value=f"If you want to join the lobby type !join {lobby.lobby_owner.mention} [bet]",inline=False)
         else:
@@ -322,6 +321,7 @@ class lobby(commands.Cog):
         timer = lobby.timer
         timer.clear()
         game_cog = self.bot.get_cog(lobby.game_type+"_game")
+        self.bot.dispatch("log",f"lobby: {player.name} removed from {lobby.lobby_owner.name}'s {lobby.game_type}")
         await game_cog.on_timer_dq(player,lobby,channel)
 
     @commands.Cog.listener()
@@ -330,6 +330,21 @@ class lobby(commands.Cog):
         self.bot.game_lobbies.remove(member_lobby)
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
         self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
+    
+    #########################
+    #    COMMAND ERRORS     #
+    #########################
+
+    @join.error
+    async def join_error(self,ctx,error):
+        if isinstance(error,commands.errors.MemberNotFound) and len(self.bot.game_lobbies) == 1 and self.bot.game_lobbies[0].pot is not None:
+            try:
+                await self.join(ctx,self.bot.game_lobbies[0].lobby_owner,int(error.argument))
+                return
+            except:
+                pass
+        self.bot.dispatch("sendReply",ctx,f"Invalid argument: `{error.argument}`. Please try again")
+        
         
 #########################
 #      FINAL SETUP      #

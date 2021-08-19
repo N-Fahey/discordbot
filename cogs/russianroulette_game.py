@@ -96,8 +96,8 @@ class russianroulette_game(commands.Cog):
             self.bot.round_timer_reset(lobby.game.get_current_weapon_holder(),lobby,lobby.game.message.channel)
         else:
             self.bot.dispatch("queryAddWin",[(lobby.game_type ,lobby.game.players[0].id)])
-            if await lobby.game.message.edit(embed=self.get_embed(lobby)):
-                await self.bot.lobby_end_game(lobby,lobby.game.players[0])
+            res = await lobby.game.message.edit(embed=self.get_embed(lobby))
+            await self.bot.lobby_end_game(lobby,lobby.game.players[0])
 
     # on_game_start event
     async def on_game_start(self,ctx):
@@ -160,20 +160,20 @@ class russianroulette_game(commands.Cog):
         elif pull_result == "dead":
             await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
             await ctx.message.delete()
-            self.bot.round_timer_reset(ctx,member_lobby)
+            self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
         elif pull_result == "continue":
             await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
             await ctx.message.delete()
-            self.bot.round_timer_reset(ctx,member_lobby)
+            self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
         else:
             self.bot.dispatch("queryAddWin",[(member_lobby.game_type ,member_lobby.game.players[0].id)])
-            await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
+            #await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             await ctx.message.delete()
             
             res = await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
-            await self.bot.lobby_end_game(member_lobby)
+            await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             
     @commands.command("spin", help="Spin the cylinder of the revolver")
     async def handle_click(self,ctx):
@@ -197,7 +197,7 @@ class russianroulette_game(commands.Cog):
             return
         else:
             await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
-            self.bot.round_timer_reset(ctx,member_lobby)
+            self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             await ctx.message.delete()
     #########################
     #     COMMAND ERRORS    #
