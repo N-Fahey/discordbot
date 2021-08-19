@@ -5,6 +5,7 @@ currencyCode: "߾"
 dolePayment: 100
 doleLimit: 1000
 doleTimeout: 86400
+audioBiteCooldown: 15
 
 prettyGames:
   russianroulette: "Russian Roulette"
