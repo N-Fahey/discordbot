@@ -1,5 +1,5 @@
-from discord.ext import commands,timers
-from discord import Embed,Member,FFmpegPCMAudio
+from discord.ext import commands
+from discord import FFmpegPCMAudio
 import time,os
 #########################
 #       Extension       #
@@ -11,6 +11,19 @@ class audiobites(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.bot.audio_bite_cooldown = None
+
+    async def play_sound_file(self,voice_channel,sound):
+        sound_dir = os.listdir("resources/sound/effects")
+        for file in sound_dir:
+            if file.split('.')[0] == sound:
+                vc = await voice_channel.connect()
+                vc.play(FFmpegPCMAudio(source=f"resources/sound/effects/{file}"))
+                while vc.is_playing():
+                        time.sleep(.1)
+                await vc.disconnect()
+                return True
+        return False
+
     #kill_lobby
     @commands.command(name="audio",help="play an audio clip")
     async def audio_bite(self,ctx, bite):
