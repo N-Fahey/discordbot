@@ -60,12 +60,12 @@ class lobby(commands.Cog):
         return None
     
     async def lobby_end_game(self,lobby,winner):
+        self.bot.dispatch("log",f"lobby: {lobby.lobby_owner.name} ending {lobby.game_type} lobby.")
         if lobby.pot is not None:
             sql_cog = self.bot.get_cog('sql')
             await sql_cog.queryPay([(sum(lobby.pot.values()),winner.id)])
         await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
         self.bot.game_lobbies.remove(lobby)
-
 
     def get_lobby_embed_message(self,lobby, closed=False):
         embed = Embed(title=f"{lobby.lobby_owner.display_name} wants to play {self.bot.prettyGames[lobby.game_type]}")
