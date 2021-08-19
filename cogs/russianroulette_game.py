@@ -91,7 +91,7 @@ class russianroulette_game(commands.Cog):
     async def on_timer_dq(self,player,lobby,channel):
         remove_outcome = lobby.game.remove_player(player)
         if remove_outcome == "dead":
-            lobby.game.message.edit(embed=self.get_embed(lobby))
+            await lobby.game.message.edit(embed=self.get_embed(lobby))
             self.bot.round_timer_reset(lobby.game.get_current_weapon_holder(),lobby,lobby.game.message.channel)
         else:
             self.bot.dispatch("queryAddWin",[(lobby.game_type ,lobby.game.players[0].id)])
