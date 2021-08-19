@@ -24,7 +24,7 @@ class audiobites(commands.Cog):
                 return True
         return False
 
-    #kill_lobby
+    #Audio
     @commands.command(name="audio",help="play an audio clip")
     async def audio_bite(self,ctx, bite):
 
