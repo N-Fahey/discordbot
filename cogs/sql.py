@@ -62,7 +62,7 @@ class sql(commands.Cog):
                 query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).update({BotUsers.name:qData[1], BotUsers.display_name:qData[2]})
             else:
                 # Insert
-                session.add(BotUsers(user_id=qData[0],name=qData[1],display_name=qData[2]))
+                session.add(BotUsers(user_id=qData[0],name=qData[1],display_name=qData[2],last_dole=datetime.now()))
 
             session.commit()
 
