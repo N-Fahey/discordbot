@@ -103,7 +103,7 @@ class russianroulette_game(commands.Cog):
         member_lobby = self.bot.get_member_lobby(ctx.author)
         self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
         member_lobby.game.event_list.append({"name":"turn", "player":member_lobby.game.get_current_weapon_holder()})
-        member_lobby.game.message = await ctx.send(embed=self.get_embed(member_lobby))
+        await self.update_embed(ctx,member_lobby)
 
 
     def roulette_event_to_emoji(self,event):
@@ -127,13 +127,37 @@ class russianroulette_game(commands.Cog):
 
         return event["name"]
 
-    def get_embed(self,member_lobby):
+    def get_embed(self,member_lobby, render_current_move=True, page=0 , page_size=6):
         embed = Embed(title=f"{member_lobby.lobby_owner.display_name}'s Russian Roulette Lobby")
         embed.add_field(name='Alive Players',value='\n'.join(i.display_name for i in member_lobby.lobby_players))
-        event_list_parsed = '\n '.join(self.roulette_event_to_emoji(i) for i in member_lobby.game.event_list)
-        embed.add_field(name='Current Move',value=self.roulette_event_to_emoji(member_lobby.game.event_list[len(member_lobby.game.event_list)-1]))
+        # Lmao i don't even wanna talk about this
+        event_list_parsed = '\n '.join(self.roulette_event_to_emoji(i) for i in member_lobby.game.event_list[ page*page_size : page*page_size+page_size])
+
+        if render_current_move:
+            embed.add_field(name='Current Move',value=self.roulette_event_to_emoji(member_lobby.game.event_list[len(member_lobby.game.event_list)-1]))
         embed.add_field(name='Game Log',value=event_list_parsed,inline=False)
         return embed
+
+
+    async def update_embed(self,ctx,member_lobby):
+        max_turn_count = 6
+        # Split Into Second Message
+        # Account For starting two messages
+        turn_count = 0
+        for i in member_lobby.game.event_list:
+            if i['name'] == "turn":
+                turn_count += 1
+
+        remainder = (turn_count-1) % max_turn_count
+        page = int((turn_count-1) / max_turn_count)
+        # THS IS REALLY BAD IS ASSUMES THAT ALL TURNS COME WITH TWO PAIRS OF MESSAGES
+        if remainder == 0:
+            if page > 0:
+                await member_lobby.game.message.edit(embed=self.get_embed(member_lobby,False,page-1, max_turn_count*2))
+
+            member_lobby.game.message = await ctx.send(embed=self.get_embed(member_lobby,True,page,max_turn_count*2))
+        else:
+            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby,True,page,max_turn_count*2))
 
     #########################
     #        COMMANDS       #
@@ -159,12 +183,12 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return        
         elif pull_result == "dead":
-            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
+            
             await ctx.message.delete()
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
         elif pull_result == "continue":
-            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
+            await self.update_embed(ctx,member_lobby)
             await ctx.message.delete()
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
@@ -172,7 +196,7 @@ class russianroulette_game(commands.Cog):
             #await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             await ctx.message.delete()
             
-            res = await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
+            res = await self.update_embed(ctx,member_lobby)
             await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             
     @commands.command("spin", help="Spin the cylinder of the revolver")
@@ -196,7 +220,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
         else:
-            await member_lobby.game.message.edit(embed=self.get_embed(member_lobby))
+            await self.update_embed(ctx,member_lobby)
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             await ctx.message.delete()
     #########################
