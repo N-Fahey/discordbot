@@ -97,19 +97,21 @@ class events(commands.Cog):
     async def on_voice_state_update(self,member,before,after):
         if member.bot:
             return
-        if after.channel != before.channel:
-            channels = [i for i in member.guild.channels if isinstance(i,VoiceChannel)]
-            for channel in channels:
-                if len(channel.members) == 1 and channel.members[0].id == 195114381820952577:
-                    self.bot.vc = await channel.members[0].voice.channel.connect()
-                    self.bot.dispatch("log",f"ynwa: Joined {self.bot.vc.channel.name}")
-                    break                
-                else:
-                    if self.bot.vc is not None and self.bot.vc.is_connected() and self.bot.vc.channel == channel:
-                        self.bot.dispatch("log",f"ynwa: Leaving {self.bot.vc.channel.name}")
-                        await self.bot.vc.disconnect()
-                        self.bot.vc = None
-                        break
+        
+        if member.guild.id == 629288645257461780:            
+            if after.channel != before.channel:
+                channels = [i for i in member.guild.channels if isinstance(i,VoiceChannel)]
+                for channel in channels:
+                    if len(channel.members) == 1 and channel.members[0].id == 195114381820952577:
+                        self.bot.vc = await channel.members[0].voice.channel.connect()
+                        self.bot.dispatch("log",f"ynwa: Joined {self.bot.vc.channel.name}")
+                        break                
+                    else:
+                        if self.bot.vc is not None and self.bot.vc.is_connected() and self.bot.vc.channel == channel:
+                            self.bot.dispatch("log",f"ynwa: Leaving {self.bot.vc.channel.name}")
+                            await self.bot.vc.disconnect()
+                            self.bot.vc = None
+                            break
 
     #########################
     #    EVENT LISTENERS    #
