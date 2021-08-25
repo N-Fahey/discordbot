@@ -46,9 +46,9 @@ class Slots:
             if self.pot > self.max_pot:
                 self.max_pot = self.pot
             
-            if spin == (2,3,4) or spin == (4,3,2):
+            if 2 in spin and 3 in spin and 4 in spin:
                 outcome = "A Gaggle of Gamer Girls"
-            elif spin == (4,5,6) or spin == (6,5,4):
+            elif 4 in spin and 5 in spin and 6 in spin:
                 outcome = "The FG Three"
             elif spin == (1,1,1):
                 outcome = "CJ's Jackpot"
@@ -93,17 +93,25 @@ class Slots:
     def check_win(self,spin:list):
         big_win_options = { #key: spin, value: payout multiple
             #Gamer girls
-            (2,3,4):10,
-            (4,3,2):10,
+            (2,3,4):5,
+            (2,4,3):5,
+            (3,2,4):5,
+            (3,4,2):5,
+            (4,2,3):5,
+            (4,3,2):5,
             #The FG Three
-            (4,5,6):10,
-            (6,5,4):10,
+            (4,5,6):5,
+            (4,6,5):5,
+            (5,4,6):5,
+            (5,6,4):5,
+            (6,4,5):5,
+            (6,5,4):5,
             #CJ's Jackpot
             (1,1,1):50,
         }
         for i in range(2,9):
             #Any other 3 match
-            big_win_options[(i,i,i)] = 5
+            big_win_options[(i,i,i)] = 3
 
         if spin in big_win_options:
             self.big_wins += 1
@@ -132,6 +140,9 @@ for _ in range(100):
 
     while True:
         res = slot.pull('fish',0)
+        if res['outcome'] == "The FG Three":
+            print('worked')
+            break
         if slot.pot < 3:
             break
     outcomes["spins"].append(slot.spins)
@@ -190,7 +201,6 @@ class slots_sp_game(commands.Cog):
         member_lobby.pot[ctx.author] = 0
         member_lobby.game.update_bet_options()
         self.bot.dispatch("create_slots_message",ctx)
-        self.bot.dispatch("sendReply",ctx,f"Ready to play. !handle. Bet options: {member_lobby.game.bet_options} Pot: {member_lobby.game.pot}")
     
     #########################
     #        COMMANDS       #
