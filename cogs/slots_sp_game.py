@@ -276,6 +276,7 @@ class slots_sp_game(commands.Cog):
             await asyncio.sleep(0.5)
             await self.end_slots_message(user)
             await self.bot.lobby_end_game(member_lobby,None)
+            return
 
         if result['outcome'] != "":
             embed.add_field(name="You Won!",value=f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑",inline=False)
