@@ -85,7 +85,8 @@ class lobby(commands.Cog):
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner."
 
         self.bot.dispatch("log",log_msg)
-        await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
+        if lobby.message is not None:
+            await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
         lobby.timer.clear()
         self.bot.game_lobbies.remove(lobby)
 
@@ -219,10 +220,13 @@ class lobby(commands.Cog):
             lobby.timer = timers.TimerManager(self.bot)
             lobby.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[lobby])
             self.bot.game_lobbies.append(lobby)
+            if lobby.game_type.endswith('_sp'):
+                lobby.message = None
+                await self.start(ctx)
+                return
             self.bot.dispatch("log",f"lobby: {ctx.author} created {match[0]} lobby.")
             lobby.message = await ctx.send(embed=self.get_lobby_embed_message(lobby)) 
             return
-
         self.bot.dispatch("sendReply",ctx,f"game not found.")
 
 
@@ -262,7 +266,8 @@ class lobby(commands.Cog):
         member_lobby.game = game_cog.get_game_class(member_lobby.lobby_players)
         member_lobby.in_game = True
         member_lobby.timer.clear()
-        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
+        if member_lobby.message is not None:
+            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
         self.bot.dispatch("log",f"{member_lobby.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in member_lobby.lobby_players[1:])}")
         await game_cog.on_game_start(ctx)
         return
@@ -292,7 +297,8 @@ class lobby(commands.Cog):
 
         member_lobby.lobby_players.remove(ctx.author)  
         self.bot.dispatch("log",f"lobby: {ctx.author} left {member_lobby.game_type} lobby")
-        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby))
+        if member_lobby.message is not None:
+            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby))
 
     #kill_lobby
     @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
@@ -319,8 +325,8 @@ class lobby(commands.Cog):
             sql_cog = self.bot.get_cog('sql')
             for member,pot_amount in member_lobby.pot.items():
                 await sql_cog.queryPay([(pot_amount,member.id)])
-
-        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
+        if member_lobby.message is not None:
+            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
         await self.lobby_end_game(member_lobby,None)
         reply = f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby closed."
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
@@ -347,7 +353,8 @@ class lobby(commands.Cog):
 
     @commands.Cog.listener()
     async def on_lobbytimer(self,member_lobby):
-        await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
+        if member_lobby.message is not None:
+            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
         self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
         await self.lobby_end_game(member_lobby,None)
