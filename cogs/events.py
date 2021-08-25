@@ -70,9 +70,12 @@ class events(commands.Cog):
 
 
         member_lobby = self.bot.get_member_lobby(user)
-        if member_lobby:
-            if member_lobby.in_game and member_lobby.game_type == "connect4": #Just ignore this when the game's running
+        if member_lobby and member_lobby.in_game:
+            if member_lobby.game_type == "connect4": #Just ignore this when the game's running
                 self.bot.dispatch("connect4Reaction",user,reaction)
+                return
+            elif member_lobby.game_type == "slots_sp":
+                self.bot.dispatch("slots_reaction",user,reaction)
                 return
 
         if user.id == 195114381820952577: #mine
@@ -85,9 +88,11 @@ class events(commands.Cog):
             return
 
         member_lobby = self.bot.get_member_lobby(user)
-        if member_lobby:
-            if member_lobby.in_game and member_lobby.game_type == "connect4": #Just ignore this when the game's running
+        if member_lobby and member_lobby.in_game:
+            if member_lobby.game_type == "connect4": #Just ignore this when the game's running
                 return
+            if member_lobby.game_type == "slots_sp":
+                return            
 
         if user.id == 195114381820952577:
             await reaction.message.remove_reaction(reaction.emoji,self.bot.user)

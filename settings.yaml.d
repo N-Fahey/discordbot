@@ -11,6 +11,7 @@ prettyGames:
   russianroulette: "Russian Roulette"
   liarsdice: "Liar's Dice"
   connect4: "Connect 4"
+  slots_sp: "Slots"
 
 round_timers:
   seconds_warning: 15
