@@ -14,28 +14,19 @@ class admin(commands.Cog):
     #########################
     #        COMMANDS       #
     #########################
-    
+
     #TESTING
     @commands.command(name="test", help="Testing")
     @commands.has_permissions(administrator=True)
-    async def test(self,ctx, count:int=1):
-        vcList = [i for i in ctx.guild.channels if isinstance(i,VoiceChannel)]
-        vcCount = len(vcList)
-        chatters = {}
-        for vc in vcList:
-            mems = vc.members
-            for mem in mems:
-                chatters[mem] = vc
+    async def test(self,ctx):
+        print(ctx.author.guild_permissions.manage_threads)
 
-        for _ in range(count):
-            for chatter in chatters:
-                await chatter.move_to(vcList[randint(0,vcCount - 1)])
-            await asyncio.sleep(0.5)
 
-        for chatter in chatters:
-            await chatter.move_to(chatters[chatter])
-        
-        self.bot.dispatch("log",f"admin: {ctx.author} unleashed the kraken {count} times.")
+    #Eval
+    @commands.command(name="eval")
+    @commands.has_permissions(administrator=True)
+    async def cmd_eval(self,ctx,arg):
+        await ctx.send(f"```python\n{eval('self.bot.' + arg)}```")
 
     #RESET
     @commands.command(name="reset",help="Reset bot attributes.")
