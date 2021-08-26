@@ -120,7 +120,7 @@ class Slots:
             for i in spin:
                 if spin.count(i) > 1:
                     self.wins += 1
-                    return 0.9
+                    return 2
             return None
 
 """ outcomes = {
