@@ -173,7 +173,7 @@ class connect4_game(commands.Cog):
         embed = Embed()
         embed.add_field(name='Instructions',value='Click the reactions below to drop your piece into the corresponding column.\nFirst to line up 4 pieces wins')
         embed.add_field(name='Players turn',value=member_lobby.game.players[member_lobby.game.player].mention)
-        msg = await ctx.send(board, embed= embed) #Then add reactions to the msg, and instructions?
+        msg = await member_lobby.thread.send(board, embed= embed) #Then add reactions to the msg, and instructions?
 
         for react in ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣']:
             await msg.add_reaction(react)

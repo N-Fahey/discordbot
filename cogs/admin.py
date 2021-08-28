@@ -1,7 +1,4 @@
-import operator,asyncio
 from discord.ext import commands
-from discord import VoiceChannel,Member
-from random import randint
 
 #########################
 #       Extension       #
@@ -19,7 +16,7 @@ class admin(commands.Cog):
     @commands.command(name="test", help="Testing")
     @commands.has_permissions(administrator=True)
     async def test(self,ctx):
-        print(ctx.author.guild_permissions.manage_threads)
+        pass
 
 
     #Eval
@@ -45,7 +42,6 @@ class admin(commands.Cog):
             await ctx.send("Error reloading extensions")  
 
 
-
     #POPULATE DATABASE (This occurs on each restart)
     @commands.command(name="populatedb",help="Populate database")
     @commands.has_permissions(administrator=True)
@@ -54,26 +50,6 @@ class admin(commands.Cog):
             self.bot.dispatch("populatedb",ctx)
         except:
             await ctx.send("Error populating db")  
-    
-    #Get Attribute
-    @commands.command(name="gattr")
-    @commands.has_permissions(administrator=True)
-    async def gattr(self, ctx, attr:str=""):
-        if attr == "":
-            reply = "No attribute supplied"
-        try:
-            reply = str(operator.attrgetter(attr)(self.bot))
-        except:
-            reply = "Invalid attribute"
-
-        self.bot.dispatch("sendReply",ctx,reply)
-    
-    #Print the message info of the calling command. Useful for getting channel/guild ID
-    @commands.command(name="printchannel")
-    @commands.has_permissions(administrator=True)
-    async def get_object(self,ctx):    
-        self.bot.dispatch("sendReply",ctx,ctx.message)
-
 
     #########################
     #    EVENT LISTENERS    #

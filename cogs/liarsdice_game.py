@@ -134,12 +134,12 @@ class liarsdice_game(commands.Cog):
 
         if remove_outcome: #Returns True if game can progress to next round
             lobby.game.assignHands()
-            self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed from the game for inactivity.")
+            self.bot.dispatch("sendReply",lobby.thread,f"{player.display_name} was removed from the game for inactivity.")
             self.bot.dispatch("messageHands",lobby)
-            self.bot.dispatch("sendReply",channel,f"Round {lobby.game.round}: {lobby.game.better.mention}, your turn to bet.")
+            self.bot.dispatch("sendReply",lobby.thread,f"Round {lobby.game.round}: {lobby.game.better.mention}, your turn to bet.")
         else:
-            self.bot.dispatch("sendReply",channel,f"{player.display_name} was removed from the game for inactivity.")
-            self.bot.dispatch("sendReply",channel,f"Game is over. {lobby.game.players[0].mention} is the winner!")
+            self.bot.dispatch("sendReply",lobby.thread,f"{player.display_name} was removed from the game for inactivity.")
+            self.bot.dispatch("sendReply",lobby.thread,f"Game is over. {lobby.game.players[0].mention} is the winner!")
             await self.bot.lobby_end_game(lobby,lobby.game.players[0])
 
     # on_game_start event
@@ -158,6 +158,9 @@ class liarsdice_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"You're not in a game of liar's dice")
             return
 
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
+            return
 
         if not member_lobby.in_game or member_lobby.game_type != "liarsdice":
             self.bot.dispatch("sendReply",ctx,"No game of Liar's Dice active.")
@@ -188,6 +191,10 @@ class liarsdice_game(commands.Cog):
 
         if not member_lobby:
             self.bot.dispatch("sendReply",ctx,"You're not in a game of liar's dice")
+            return
+
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
             return
 
         if not member_lobby.in_game or member_lobby.game_type != "liarsdice":

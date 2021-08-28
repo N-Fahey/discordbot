@@ -103,7 +103,7 @@ class russianroulette_game(commands.Cog):
         member_lobby = self.bot.get_member_lobby(ctx.author)
         self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
         member_lobby.game.event_list.append({"name":"turn", "player":member_lobby.game.get_current_weapon_holder()})
-        await self.update_embed(ctx,member_lobby)
+        await self.update_embed(member_lobby)
 
 
     def roulette_event_to_emoji(self,event):
@@ -139,7 +139,7 @@ class russianroulette_game(commands.Cog):
         return embed
 
 
-    async def update_embed(self,ctx,member_lobby):
+    async def update_embed(self,member_lobby):
         max_turn_count = 6
         # Split Into Second Message
         # Account For starting two messages
@@ -155,7 +155,7 @@ class russianroulette_game(commands.Cog):
             if page > 0:
                 await member_lobby.game.message.edit(embed=self.get_embed(member_lobby,False,page-1, max_turn_count*2))
 
-            member_lobby.game.message = await ctx.send(embed=self.get_embed(member_lobby,True,page,max_turn_count*2))
+            member_lobby.game.message = await member_lobby.thread.send(embed=self.get_embed(member_lobby,True,page,max_turn_count*2))
         else:
             await member_lobby.game.message.edit(embed=self.get_embed(member_lobby,True,page,max_turn_count*2))
 
@@ -173,6 +173,10 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"You're not in a lobby.")
             return
 
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
+            return
+
         if not member_lobby.in_game or member_lobby.game_type != "russianroulette":
             self.bot.dispatch("sendReply",ctx,"You're not in a game of russian roulette.")
             return
@@ -188,7 +192,7 @@ class russianroulette_game(commands.Cog):
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
         elif pull_result == "continue":
-            await self.update_embed(ctx,member_lobby)
+            await self.update_embed(member_lobby)
             await ctx.message.delete()
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
@@ -196,7 +200,7 @@ class russianroulette_game(commands.Cog):
             #await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             await ctx.message.delete()
             
-            res = await self.update_embed(ctx,member_lobby)
+            res = await self.update_embed(member_lobby)
             await self.bot.lobby_end_game(member_lobby,member_lobby.game.players[0])
             
     @commands.command("spin", help="Spin the cylinder of the revolver")
@@ -206,6 +210,10 @@ class russianroulette_game(commands.Cog):
 
         if not member_lobby:
             self.bot.dispatch("sendReply",ctx,"You're not in a lobby.")
+            return
+
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
             return
 
         if not member_lobby.in_game or member_lobby.game_type != "russianroulette":
@@ -220,7 +228,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you've already spun the cylinder")
             return
         else:
-            await self.update_embed(ctx,member_lobby)
+            await self.update_embed(member_lobby)
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             await ctx.message.delete()
     #########################

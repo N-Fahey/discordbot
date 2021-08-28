@@ -1,8 +1,53 @@
 from random import randint
 from discord.ext import commands
-from discord import Embed
+import discord
 import asyncio
-from statistics import mean
+
+#########################
+#         Views         #
+#########################
+
+
+class Slots_View(discord.ui.View):
+    def __init__(self,bot,lobby):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.lobby = lobby
+    
+    async def interaction_check(self,interaction):
+        if interaction.user != self.lobby.lobby_owner:
+            await interaction.response.send_message("This isn't your game!",ephemeral=True)
+            return False
+        else:
+            return True
+    
+    async def update_buttons(self,bet_options):
+        buttons = [i for i in self.children if isinstance(i,discord.ui.Button) and i.custom_id != 'quit']
+        for index,btn in enumerate(buttons):
+            try:
+                btn.disabled = False
+                btn.label = f'{self.bot.currencyCode}{bet_options[index]}'               
+            except IndexError:                
+                btn.disabled = True
+            except:
+                raise
+        return self #Returns the updated view. pass this into the message.edit along with any other changes
+
+    @discord.ui.button(label='1',emoji='1️⃣', style=discord.ButtonStyle.blurple,custom_id='1')
+    async def bet_1(self, button:discord.ui.Button, interaction:discord.Interaction):
+        self.bot.dispatch("slots_reaction",interaction.user,0)
+    
+    @discord.ui.button(label='2',emoji='2️⃣', style=discord.ButtonStyle.blurple,custom_id='2')
+    async def bet_2(self, button:discord.ui.Button, interaction:discord.Interaction):
+        self.bot.dispatch("slots_reaction",interaction.user,1)
+    
+    @discord.ui.button(label='3',emoji='3️⃣', style=discord.ButtonStyle.blurple,custom_id='3')
+    async def bet_3(self, button:discord.ui.Button, interaction:discord.Interaction):
+        self.bot.dispatch("slots_reaction",interaction.user,2)
+    
+    @discord.ui.button(label='Cash out',emoji='🏧', style=discord.ButtonStyle.blurple, custom_id='quit')
+    async def cashout(self, button:discord.ui.Button, interaction:discord.Interaction):
+        self.bot.dispatch("slots_reaction",interaction.user,'quit')
 
 #########################
 #       Game Class      #
@@ -14,6 +59,7 @@ class Slots:
         self.pot = 0
         self.update_bet_options()
         self.msg = None
+        self.spinning = False
         self.spins = 0
         self.won = 0
         self.max_pot = 0 #Only used for testing
@@ -123,44 +169,6 @@ class Slots:
                     return 2
             return None
 
-""" outcomes = {
-    "spins":[],
-    "avg_spins":0,
-    "max_pots":[],
-    "highest_pot":0,
-    "little_wins":0,
-    "big_wins":0,
-    "jackpots":0
-}
-
-for _ in range(100):
-    slot = Slots(['fish'])
-    slot.pot = 100
-    slot.update_bet_options()
-
-    while True:
-        res = slot.pull('fish',0)
-        if res['outcome'] == "The FG Three":
-            print('worked')
-            break
-        if slot.pot < 3:
-            break
-    outcomes["spins"].append(slot.spins)
-    outcomes["little_wins"] += slot.wins
-    outcomes["max_pots"].append(slot.max_pot)
-    if slot.max_pot > outcomes["highest_pot"]:
-        outcomes["highest_pot"] = slot.max_pot
-    outcomes["big_wins"] += slot.big_wins
-    outcomes["jackpots"] += slot.jackpots
-
-outcomes["avg_spins"] = mean(outcomes["spins"])
-outcomes["highest_pot_avg"] = mean(outcomes["max_pots"])
-outcomes.pop("spins")
-outcomes.pop("max_pots")
-print(outcomes) """
-
-
-
 #########################
 #       Extension       #
 #########################
@@ -186,7 +194,7 @@ class slots_sp_game(commands.Cog):
         return "Slots is a single player game!"
 
     async def on_timer_dq(self,player,lobby,channel):
-        #Don't know yet
+        #Don't really need this
         pass
 
     # on_game_start event
@@ -203,12 +211,6 @@ class slots_sp_game(commands.Cog):
         self.bot.dispatch("create_slots_message",ctx)
     
     #########################
-    #        COMMANDS       #
-    #########################
-
-    #Shouldnt be any
-    
-    #########################
     #    EVENT LISTENERS    #
     #########################
 
@@ -220,13 +222,12 @@ class slots_sp_game(commands.Cog):
         if member_lobby.game.msg is None:
             raise RuntimeError("No game message could be found.")
         
-        embed = Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
-        embed.set_thumbnail(url=user.avatar_url)
+        embed = discord.Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
+        embed.set_thumbnail(url=user.avatar.url)
         embed.add_field(name="Game Ended",value="Thanks for playing!")
         if member_lobby.game.pot > 0:
             embed.add_field(name="Payout",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
-        await member_lobby.game.msg.edit(embed=embed)
-        await member_lobby.game.msg.clear_reactions()
+        await member_lobby.game.msg.edit(embed=embed,view=None)
 
     @commands.Cog.listener()
     async def on_create_slots_message(self,ctx):
@@ -237,17 +238,14 @@ class slots_sp_game(commands.Cog):
         if member_lobby.game.msg is not None:
             raise RuntimeError("Can only create slots message if none exists")
         
-        embed = Embed(title=f"🤑🎰💰{ctx.author.display_name}'s Slots!💰🎰🤑")
-        embed.set_thumbnail(url=ctx.author.avatar_url)
+        embed = discord.Embed(title=f"🤑🎰💰{ctx.author.display_name}'s Slots!💰🎰🤑")
+        embed.set_thumbnail(url=ctx.author.avatar.url)
         embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.")
         embed.add_field(name="Pot",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
-        render_bet_options = member_lobby.game.bet_options + ['--'] * (3-len(member_lobby.game.bet_options))
-        embed.add_field(name="Bet Options",value=f"1️⃣:{self.bot.currencyCode}{render_bet_options[0]} 2️⃣:{self.bot.currencyCode}{render_bet_options[1]} 3️⃣:{self.bot.currencyCode}{render_bet_options[2]} 🏧:Cash out!",inline=False)
-        
-        message = await ctx.send(embed=embed)
-
-        for react in ['1️⃣','2️⃣','3️⃣','🏧']:
-            await message.add_reaction(react)
+        view = Slots_View(self.bot,member_lobby)
+        await view.update_buttons(member_lobby.game.bet_options)
+        member_lobby.game.view = view
+        message = await ctx.send(embed=embed,view=view)
 
         member_lobby.game.msg = message
         
@@ -266,8 +264,8 @@ class slots_sp_game(commands.Cog):
             disp_msg = [self.bot.emojiDict['spin'],self.bot.emojiDict['spin'],self.bot.emojiDict['spin']]
             for index,spin_int in enumerate(spin_msg):
                 disp_msg[index] = self.bot.emojiDict['slot_' + str(spin_int)]
-            embed = Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
-            embed.set_thumbnail(url=user.avatar_url)
+            embed = discord.Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
+            embed.set_thumbnail(url=user.avatar.url)
             embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.",inline=False)
             embed.add_field(name="🎰Your Spin!🎰",value=" ".join(disp_msg),inline=False)
             await member_lobby.game.msg.edit(embed=embed)
@@ -284,35 +282,29 @@ class slots_sp_game(commands.Cog):
         embed.add_field(name="Spins",value=member_lobby.game.spins)
         if member_lobby.game.won > 0:
             embed.add_field(name="Total Won",value=f"💰{self.bot.currencyCode}{member_lobby.game.won}💰")
-        render_bet_options = member_lobby.game.bet_options + ['--'] * (3-len(member_lobby.game.bet_options))
-        embed.add_field(name="Bet Options",value=f"1️⃣:{self.bot.currencyCode}{render_bet_options[0]} 2️⃣:{self.bot.currencyCode}{render_bet_options[1]} 3️⃣:{self.bot.currencyCode}{render_bet_options[2]} 🏧:Cash out!",inline=False)
-        await member_lobby.game.msg.edit(embed=embed)
+        view = await member_lobby.game.view.update_buttons(member_lobby.game.bet_options)
+        await member_lobby.game.msg.edit(embed=embed, view=view)
+        member_lobby.game.spinning = False
 
-    #Reaction listener - called by on_reaction_add if the calling user is in a game of slots
+    #Repurposed reaction listener
     @commands.Cog.listener()
-    async def on_slots_reaction(self,user,reaction):
+    async def on_slots_reaction(self,user,selection):
         member_lobby = self.bot.get_member_lobby(user)
         if not member_lobby:
             return
 
-        if member_lobby.game.msg is not None and user == member_lobby.game.player and reaction.emoji:
-            bet_options = ['1️⃣','2️⃣','3️⃣']
-            if reaction.emoji in bet_options:
-                #Check if the selected bet option is valid (Occurs when pot < 3)
-                if len(member_lobby.game.bet_options) -1 >= bet_options.index(reaction.emoji):
-                    res = member_lobby.game.pull(user,bet_options.index(reaction.emoji))
-                    self.bot.dispatch("update_slots_message",user,res)
-            elif reaction.emoji == '🏧':
-                #Pay em out and end the game
-                member_lobby.pot = {user:member_lobby.game.pot}
-                await self.end_slots_message(user)                
-                await self.bot.lobby_end_game(member_lobby,user)
-                pass
+        if member_lobby.game.spinning:
+            return
 
-        
-        #Regardless of above, remove the reaction at the end
-        await reaction.remove(user)
-
+        if selection == 'quit':
+            member_lobby.pot = {user:member_lobby.game.pot}
+            await self.end_slots_message(user)                
+            await self.bot.lobby_end_game(member_lobby,user)
+        else:
+            if len(member_lobby.game.bet_options) - 1 >= selection:
+                member_lobby.game.spinning = True
+                res = member_lobby.game.pull(user,selection)
+                self.bot.dispatch("update_slots_message",user,res)
 
 #########################
 #      FINAL SETUP      #
