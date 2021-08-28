@@ -1,6 +1,6 @@
 from random import randint
 from discord.ext import commands
-import discord
+from discord import ui,ButtonStyle,Interaction,Embed
 import asyncio
 
 #########################
@@ -8,7 +8,7 @@ import asyncio
 #########################
 
 
-class Slots_View(discord.ui.View):
+class Slots_View(ui.View):
     def __init__(self,bot,lobby):
         super().__init__(timeout=None)
         self.bot = bot
@@ -22,7 +22,7 @@ class Slots_View(discord.ui.View):
             return True
     
     async def update_buttons(self,bet_options):
-        buttons = [i for i in self.children if isinstance(i,discord.ui.Button) and i.custom_id != 'quit']
+        buttons = [i for i in self.children if isinstance(i,ui.Button) and i.custom_id != 'quit']
         for index,btn in enumerate(buttons):
             try:
                 btn.disabled = False
@@ -33,20 +33,20 @@ class Slots_View(discord.ui.View):
                 raise
         return self #Returns the updated view. pass this into the message.edit along with any other changes
 
-    @discord.ui.button(label='1',emoji='1️⃣', style=discord.ButtonStyle.blurple,custom_id='1')
-    async def bet_1(self, button:discord.ui.Button, interaction:discord.Interaction):
+    @ui.button(label='1',emoji='1️⃣', style=ButtonStyle.blurple,custom_id='1')
+    async def bet_1(self, button:ui.Button, interaction:Interaction):
         self.bot.dispatch("slots_reaction",interaction.user,0)
     
-    @discord.ui.button(label='2',emoji='2️⃣', style=discord.ButtonStyle.blurple,custom_id='2')
-    async def bet_2(self, button:discord.ui.Button, interaction:discord.Interaction):
+    @ui.button(label='2',emoji='2️⃣', style=ButtonStyle.blurple,custom_id='2')
+    async def bet_2(self, button:ui.Button, interaction:Interaction):
         self.bot.dispatch("slots_reaction",interaction.user,1)
     
-    @discord.ui.button(label='3',emoji='3️⃣', style=discord.ButtonStyle.blurple,custom_id='3')
-    async def bet_3(self, button:discord.ui.Button, interaction:discord.Interaction):
+    @ui.button(label='3',emoji='3️⃣', style=ButtonStyle.blurple,custom_id='3')
+    async def bet_3(self, button:ui.Button, interaction:Interaction):
         self.bot.dispatch("slots_reaction",interaction.user,2)
     
-    @discord.ui.button(label='Cash out',emoji='🏧', style=discord.ButtonStyle.blurple, custom_id='quit')
-    async def cashout(self, button:discord.ui.Button, interaction:discord.Interaction):
+    @ui.button(label='Cash out',emoji='🏧', style=ButtonStyle.blurple, custom_id='quit')
+    async def cashout(self, button:ui.Button, interaction:Interaction):
         self.bot.dispatch("slots_reaction",interaction.user,'quit')
 
 #########################
@@ -222,7 +222,7 @@ class slots_sp_game(commands.Cog):
         if member_lobby.game.msg is None:
             raise RuntimeError("No game message could be found.")
         
-        embed = discord.Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
+        embed = Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
         embed.set_thumbnail(url=user.avatar.url)
         embed.add_field(name="Game Ended",value="Thanks for playing!")
         if member_lobby.game.pot > 0:
@@ -238,7 +238,7 @@ class slots_sp_game(commands.Cog):
         if member_lobby.game.msg is not None:
             raise RuntimeError("Can only create slots message if none exists")
         
-        embed = discord.Embed(title=f"🤑🎰💰{ctx.author.display_name}'s Slots!💰🎰🤑")
+        embed = Embed(title=f"🤑🎰💰{ctx.author.display_name}'s Slots!💰🎰🤑")
         embed.set_thumbnail(url=ctx.author.avatar.url)
         embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.")
         embed.add_field(name="Pot",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
@@ -264,7 +264,7 @@ class slots_sp_game(commands.Cog):
             disp_msg = [self.bot.emojiDict['spin'],self.bot.emojiDict['spin'],self.bot.emojiDict['spin']]
             for index,spin_int in enumerate(spin_msg):
                 disp_msg[index] = self.bot.emojiDict['slot_' + str(spin_int)]
-            embed = discord.Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
+            embed = Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
             embed.set_thumbnail(url=user.avatar.url)
             embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.",inline=False)
             embed.add_field(name="🎰Your Spin!🎰",value=" ".join(disp_msg),inline=False)
