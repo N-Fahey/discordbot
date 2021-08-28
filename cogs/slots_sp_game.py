@@ -22,11 +22,11 @@ class Slots_View(ui.View):
             return True
     
     async def update_buttons(self,bet_options):
-        buttons = [i for i in self.children if isinstance(i,ui.Button) and i.custom_id != 'quit']
+        buttons = [i for i in self.children if isinstance(i,ui.Button) and i.custom_id != 'quit' and i.custom_id != 'all_in']
         for index,btn in enumerate(buttons):
             try:
                 btn.disabled = False
-                btn.label = f'{self.bot.currencyCode}{bet_options[index]}'               
+                btn.label = f'{self.bot.currencyCode}{bet_options[index+1]}'               
             except IndexError:                
                 btn.disabled = True
             except:
@@ -35,19 +35,41 @@ class Slots_View(ui.View):
 
     @ui.button(label='1',emoji='1️⃣', style=ButtonStyle.blurple,custom_id='1')
     async def bet_1(self, button:ui.Button, interaction:Interaction):
-        self.bot.dispatch("slots_reaction",interaction.user,0)
+        self.bot.dispatch("slots_reaction",interaction.user,1)
     
     @ui.button(label='2',emoji='2️⃣', style=ButtonStyle.blurple,custom_id='2')
     async def bet_2(self, button:ui.Button, interaction:Interaction):
-        self.bot.dispatch("slots_reaction",interaction.user,1)
+        self.bot.dispatch("slots_reaction",interaction.user,2)
     
     @ui.button(label='3',emoji='3️⃣', style=ButtonStyle.blurple,custom_id='3')
     async def bet_3(self, button:ui.Button, interaction:Interaction):
-        self.bot.dispatch("slots_reaction",interaction.user,2)
+        self.bot.dispatch("slots_reaction",interaction.user,3)
+    
+    @ui.button(label='All in',emoji='🤑', style=ButtonStyle.danger,custom_id='all_in')
+    async def allin(self, button:ui.Button, interaction:Interaction):
+        confirm_view = Slots_Confirm_View(self.bot,self.lobby)
+        await interaction.response.send_message(f"Are you sure you want to go all in? This will bet your entire pot ({self.bot.currencyCode}{self.lobby.game.pot})\nDismiss this message to back out like a tiny little baby. waa waaa waaaaa.\nOh, you didn't mean to press the button? What are you going to do? Cry??? Like a baby??",view=confirm_view,ephemeral=True)
     
     @ui.button(label='Cash out',emoji='🏧', style=ButtonStyle.blurple, custom_id='quit')
     async def cashout(self, button:ui.Button, interaction:Interaction):
         self.bot.dispatch("slots_reaction",interaction.user,'quit')
+
+class Slots_Confirm_View(ui.View):
+    def __init__(self,bot,lobby):
+        super().__init__()
+        self.bot=bot
+        self.lobby=lobby
+    
+    async def interaction_check(self,interaction): #Since message this attaches to is ephemeral this shouldn't ever matter. But putting it here anyway
+        if interaction.user != self.lobby.lobby_owner:
+            await interaction.response.send_message("This isn't your game!",ephemeral=True)
+            return False
+        else:
+            return True
+    
+    @ui.button(label='Confirm',emoji='⚠️', style=ButtonStyle.red)
+    async def allin_confirm(self,button:ui.Button,interaction:Interaction):
+        self.bot.dispatch("slots_reaction",interaction.user,0)
 
 #########################
 #       Game Class      #
@@ -125,16 +147,17 @@ class Slots:
     def update_bet_options(self):
         if self.pot <= 3:
             self.bet_options = [i for i in range(1,self.pot+1)]
+            self.bet_options.insert(0,self.pot)
         elif 4 <= self.pot <= 20:
-            self.bet_options = [1,2,4]
+            self.bet_options = [self.pot,1,2,4]
         elif 21 <= self.pot <= 50:
-            self.bet_options = [2,5,10]
+            self.bet_options = [self.pot,2,5,10]
         elif 51 <= self.pot <= 100:
-            self.bet_options = [5,10,20]
+            self.bet_options = [self.pot,5,10,20]
         elif 101 <= self.pot <= 500:
-            self.bet_options = [10,30,60]
+            self.bet_options = [self.pot,10,30,60]
         else:
-            self.bet_options = [50,75,100]
+            self.bet_options = [self.pot,50,75,100]
 
     def check_win(self,spin:list):
         big_win_options = { #key: spin, value: payout multiple
