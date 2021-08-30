@@ -1,6 +1,5 @@
 from discord.ext import commands,timers
-from discord import Embed,Member
-
+from discord import Embed,Member,Thread
 
 #########################
 #       Extension       #
@@ -45,6 +44,7 @@ class lobby(commands.Cog):
         self.bot.get_member_lobby = self.get_member_lobby
         self.bot.lobby_end_game = self.lobby_end_game
         self.bot.round_timer_reset = self.round_timer_reset
+        self.bot.check_wrong_channel = self.check_wrong_channel
 
     def get_member_lobby(self,member):
         for lobby in self.bot.game_lobbies:
@@ -59,6 +59,10 @@ class lobby(commands.Cog):
                 return lobby
 
         return None
+
+    def check_wrong_channel(self,lobby,channel):
+        if hasattr(lobby,'thread') and channel != lobby.thread:
+            return f"Game commands only work in the correct thread. Try again here:{lobby.thread.mention}"
     
     async def lobby_end_game(self,lobby,winner):
         pot = None
@@ -87,12 +91,14 @@ class lobby(commands.Cog):
         self.bot.dispatch("log",log_msg)
         if lobby.message is not None:
             await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
+        if hasattr(lobby,'thread'):
+            await lobby.thread.edit(archived=True,name=lobby.thread.name+' [CLOSED]',locked=True)
         lobby.timer.clear()
         self.bot.game_lobbies.remove(lobby)
 
     def get_lobby_embed_message(self,lobby, closed=False):
         embed = Embed(title=f"{lobby.lobby_owner.display_name} wants to play {self.bot.prettyGames[lobby.game_type]}")
-        embed.set_thumbnail(url=lobby.lobby_owner.avatar_url)
+        embed.set_thumbnail(url=lobby.lobby_owner.avatar.url)
         embed.add_field(name='Game',value=self.bot.prettyGames[lobby.game_type])
         embed.add_field(name='Owner',value=lobby.lobby_owner.mention)
         if not closed:
@@ -126,18 +132,16 @@ class lobby(commands.Cog):
     #join
     @commands.command(name="join",help="Join a currently open game lobby")
     async def join(self,ctx, lobby_owner:Member="default", bet:int = 0):
-        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
-        if ctx.channel.id != self.bot.game_channel_id:
-            game_channel = self.bot.get_channel(self.bot.game_channel_id)
-            if game_channel is not None:
-                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
-                return
+
+        if not isinstance(ctx.channel,Thread) or ctx.channel.owner_id != self.bot.user.id:
+            self.bot.dispatch("sendReply",ctx,"Game and lobby commands can only be used in a game thread.")
+            return
 
         member_lobby = self.get_member_lobby(ctx.author)
-        #If no lobby
+        #If in lobby
         if member_lobby:
             self.bot.dispatch("sendReply",ctx,"You're already in a lobby!")
-            return
+            return        
 
         if not lobby_owner:
             self.bot.dispatch("sendReply",ctx,"lobby not found")
@@ -150,7 +154,10 @@ class lobby(commands.Cog):
 
         else:
             lobby_to_join = self.get_lobby_from_owner(lobby_owner)
-    
+
+        if msg := self.bot.check_wrong_channel(lobby_to_join,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
+            return
         
         if not lobby_to_join:
             self.bot.dispatch("sendReply",ctx,"lobby not found")
@@ -226,6 +233,7 @@ class lobby(commands.Cog):
                 return
             self.bot.dispatch("log",f"lobby: {ctx.author} created {match[0]} lobby.")
             lobby.message = await ctx.send(embed=self.get_lobby_embed_message(lobby)) 
+            lobby.thread = await lobby.message.create_thread(name=f"[Game] {self.bot.prettyGames[match[0]]} - {ctx.author.display_name}",auto_archive_duration=60)
             return
         self.bot.dispatch("sendReply",ctx,f"game not found.")
 
@@ -233,19 +241,16 @@ class lobby(commands.Cog):
     #start
     @commands.command(name="start",help="Start the currently open game lobby")
     async def start(self,ctx):
-        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
-        if ctx.channel.id != self.bot.game_channel_id:
-            game_channel = self.bot.get_channel(self.bot.game_channel_id)
-            if game_channel is not None:
-                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
-                return
-
         #Check lobby is running & starter is lobby creator
-
         member_lobby = self.get_member_lobby(ctx.author)
+
         if not member_lobby:
             self.bot.dispatch("sendReply",ctx,"You aren't part of any lobby. Please create a new one using the game command.")
-            return 
+            return
+        
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
+            return
 
         if not member_lobby.is_owner(ctx.author):
             self.bot.dispatch("sendReply",ctx,"Only the user that created the lobby can start it!")
@@ -275,16 +280,15 @@ class lobby(commands.Cog):
     #Leave lobby
     @commands.command(name="leave",help="Leave the game lobby you're currently a member of")
     async def leave_lobby(self,ctx):
-        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
-        if ctx.channel.id != self.bot.game_channel_id:
-            game_channel = self.bot.get_channel(self.bot.game_channel_id)
-            if game_channel is not None:
-                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
-                return
 
         member_lobby = self.get_member_lobby(ctx.author)
+
         if not member_lobby:
             self.bot.dispatch("sendReply",ctx,"You're not in a lobby")
+            return
+        
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
             return
 
         if member_lobby.is_owner(ctx.author):
@@ -303,17 +307,17 @@ class lobby(commands.Cog):
     #kill_lobby
     @commands.command(name="cancel",help="Close the currently open game lobby\nLobby will automatically time out after 5 minutes.")
     async def kill_lobby(self,ctx):
-        #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
-        if ctx.channel.id != self.bot.game_channel_id:
-            game_channel = self.bot.get_channel(self.bot.game_channel_id)
-            if game_channel is not None:
-                self.bot.dispatch("sendReply",ctx,f"Games can only be played in the game channel: {game_channel.mention}")
-                return
 
         member_lobby = self.get_member_lobby(ctx.author)
+        
         if not member_lobby:
             self.bot.dispatch("sendReply",ctx,"You're not in a lobby")
             return
+        
+        if msg := self.bot.check_wrong_channel(member_lobby,ctx.channel):
+            self.bot.dispatch("sendReply",ctx,msg)
+            return
+
         if not member_lobby.is_owner(ctx.author):
             self.bot.dispatch("sendReply",ctx,"You're not the owner")
             return
@@ -325,12 +329,10 @@ class lobby(commands.Cog):
             sql_cog = self.bot.get_cog('sql')
             for member,pot_amount in member_lobby.pot.items():
                 await sql_cog.queryPay([(pot_amount,member.id)])
-        if member_lobby.message is not None:
-            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True)) 
-        await self.lobby_end_game(member_lobby,None)
-        reply = f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby closed."
+        reply = f"`{member_lobby.lobby_owner.display_name}`'s {self.bot.prettyGames[member_lobby.game_type]} lobby closed."
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
         self.bot.dispatch("sendReply",ctx,reply)
+        await self.lobby_end_game(member_lobby,None)
 
     #########################
     #    EVENT LISTENERS    #
@@ -353,8 +355,6 @@ class lobby(commands.Cog):
 
     @commands.Cog.listener()
     async def on_lobbytimer(self,member_lobby):
-        if member_lobby.message is not None:
-            await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby,closed=True))
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
         self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
         await self.lobby_end_game(member_lobby,None)
@@ -371,7 +371,7 @@ class lobby(commands.Cog):
                 return
             except:
                 pass
-        self.bot.dispatch("sendReply",ctx,f"Invalid argument: `{error.argument}`. Please try again")
+            self.bot.dispatch("sendReply",ctx,f"Invalid argument: `{error.argument}`. Please try again")
         
         
 #########################
