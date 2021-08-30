@@ -16,6 +16,12 @@ class currency(commands.Cog):
     #Claim the dole
     @commands.command(name="dole",help="Claim your daily handout. Only available to povos.")
     async def dole(self,ctx):
+        member_lobby = self.bot.get_member_lobby(ctx.author)
+
+        if member_lobby is not None:
+            await ctx.send("No dole while you're in a lobby ya rat dog.")
+            return
+
         sqlCog = self.bot.get_cog("sql")
         authorId = ctx.author.id
         check = await sqlCog.queryCheckDole((authorId,))
