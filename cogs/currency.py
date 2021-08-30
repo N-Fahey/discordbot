@@ -24,16 +24,17 @@ class currency(commands.Cog):
 
         sqlCog = self.bot.get_cog("sql")
         authorId = ctx.author.id
-        check = await sqlCog.queryCheckDole((authorId,))
+        check = await sqlCog.queryCheckDole(authorId)
         if check["allow"]:
-            await sqlCog.queryPayDole([(authorId,)])
+            await sqlCog.queryPayDole(authorId)
+            self.bot.dispatch("log",f"currency: {ctx.author.name} claimed dole payment. New balance: {check['balance']+self.bot.dolePayment}.")
             reply = f"Your handout has been processed. Balance is now {self.bot.currencyCode}{check['balance']+self.bot.dolePayment}."
         elif check["balance"] >= self.bot.doleLimit:
             reply = "You have too much money. Poors only"
         else:
-            hrs, rem = divmod(check['nextdole'].seconds, 3600)
+            hrs, rem = divmod(check['lastdole'].seconds, 3600)
             mins, sec = divmod(rem, 60)
-            reply = f"`{ctx.author.display_name}`, you already received your daily handout. Wait {hrs}h {mins}m"
+            reply = f"`{ctx.author.display_name}`, you received your daily handout {hrs}h {mins}m ago."
         
         await ctx.send(reply)
 
@@ -42,7 +43,8 @@ class currency(commands.Cog):
     async def transfer(self,ctx,target:Member = None,amount:int = 0):
         if target is not None and amount > 0:
             sqlCog = self.bot.get_cog("sql")
-            if await sqlCog.queryTransfer([(amount,ctx.author.id,target.id)]):
+            if await sqlCog.queryTransfer(ctx.author.id,target.id,amount):
+                self.bot.dispatch("log",f"currency: {ctx.author.name} transferred {amount} to {target.name}.")
                 reply = f"Succesfully sent {self.bot.currencyCode}{amount} to `{target.display_name}`."
             else:
                 reply = f"You don't have enough money to do that!"
@@ -54,7 +56,7 @@ class currency(commands.Cog):
     @commands.command(name="balance",help="Check your bank balance!")
     async def balance(self,ctx):
         sqlCog = self.bot.get_cog("sql")
-        bal = await sqlCog.queryCheckBalance((ctx.author.id,))
+        bal = await sqlCog.queryCheckBalance(ctx.author.id)
         
         await ctx.send(f"`{ctx.author.display_name}`, your balance is {self.bot.currencyCode}{bal}")
     
