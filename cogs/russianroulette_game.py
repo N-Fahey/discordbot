@@ -187,7 +187,7 @@ class russianroulette_game(commands.Cog):
             self.bot.dispatch("sendReply",ctx,f"{ctx.author.display_name}, you don't currently have the revolver")
             return        
         elif pull_result == "dead":
-            
+            await self.update_embed(member_lobby)
             await ctx.message.delete()
             self.bot.round_timer_reset(member_lobby.game.get_current_weapon_holder(),member_lobby,ctx.channel)
             return
