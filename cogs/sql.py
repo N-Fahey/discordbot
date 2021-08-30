@@ -209,6 +209,23 @@ class sql(commands.Cog):
                 raise
         except:
             raise
+    
+    #Top 10 moneys
+    async def queryTop10(self):
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+
+            query_result = session.query(BotUsers).filter(BotUsers.bank != 0).order_by(BotUsers.bank.desc()).limit(10).all()
+            res = {}
+
+            for line in query_result:
+                res[line.display_name] = self.bot.currencyCode + str(line.bank)
+
+            return res
+            
+        except:
+            raise
 
 #########################
 #      FINAL SETUP      #
