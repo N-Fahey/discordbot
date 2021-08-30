@@ -324,11 +324,7 @@ class lobby(commands.Cog):
         if member_lobby.in_game:
             self.bot.dispatch("sendReply",ctx,"Can't cancel a running game")
             return
-        
-        if member_lobby.pot is not None:
-            sql_cog = self.bot.get_cog('sql')
-            for member,pot_amount in member_lobby.pot.items():
-                await sql_cog.queryPay([(pot_amount,member.id)])
+
         reply = f"`{member_lobby.lobby_owner.display_name}`'s {self.bot.prettyGames[member_lobby.game_type]} lobby closed."
         self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby killed by {ctx.author}.")
         self.bot.dispatch("sendReply",ctx,reply)
