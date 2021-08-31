@@ -73,18 +73,18 @@ class lobby(commands.Cog):
                 #Return the pot if there is no winner
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner. Returning bets."
                 for member,pot_amount in lobby.pot.items():
-                    await sql_cog.queryPay([(pot_amount,member.id)])
+                    await sql_cog.queryPay(member.id,pot_amount)
             else:
                 #Otherwise - pay full pot to the winner & log win in db
                 pot = sum(lobby.pot.values())
-                await sql_cog.queryPay([(pot,winner.id)])
+                await sql_cog.queryPay(winner.id,pot)
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
-                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])   
+                self.bot.dispatch("queryAddWin",lobby.game_type,winner.id,pot)   
 
         else: #Betting disabled lobby. Still log to db if there's a winner
             if winner is not None:
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
-                self.bot.dispatch("queryAddWin",[(lobby.game_type,winner.id,pot)])
+                self.bot.dispatch("queryAddWin",lobby.game_type,winner.id,pot)
             else:
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner."
 
@@ -177,7 +177,7 @@ class lobby(commands.Cog):
             else:
                 if bet >= lobby_to_join.pot[lobby_to_join.lobby_owner]:
                     sql_cog = self.bot.get_cog('sql')
-                    if await sql_cog.queryWithdraw([(bet,ctx.author.id)]):
+                    if await sql_cog.queryWithdraw(ctx.author.id,bet):
                         lobby_to_join.lobby_players.append(ctx.author)
                         lobby_to_join.pot[ctx.author] = bet
                         self.bot.dispatch("log",f"lobby: {ctx.author} joined {lobby_to_join.game_type} lobby with bet: {bet}")
@@ -217,7 +217,7 @@ class lobby(commands.Cog):
         if len(match) == 1:
             if bet > 0:
                 sql_cog = self.bot.get_cog('sql')
-                if not await sql_cog.queryWithdraw([(bet,ctx.author.id)]):
+                if not await sql_cog.queryWithdraw(ctx.author.id,bet):
                     self.bot.dispatch("sendReply",ctx,"You don't have enough money to do that!")
                     return
             else:
@@ -297,7 +297,7 @@ class lobby(commands.Cog):
         
         if member_lobby.pot is not None:
             sql_cog = self.bot.get_cog('sql')
-            await sql_cog.queryPay([(member_lobby.pot.pop(ctx.author),ctx.author.id)])
+            await sql_cog.queryPay(ctx.author.id,member_lobby.pot.pop(ctx.author))
 
         member_lobby.lobby_players.remove(ctx.author)  
         self.bot.dispatch("log",f"lobby: {ctx.author} left {member_lobby.game_type} lobby")

@@ -46,23 +46,19 @@ class sql(commands.Cog):
 
     #Add member - called when someone joins, or updates user / member
     @commands.Cog.listener()
-    async def on_queryAddMember(self,qData): #qData expects [(member.id, member.name, member.display_name)]
-        if not isinstance(qData, list) and not isinstance(qData[0], tuple):
-            raise TypeError(f"Wrong type for qData. Expected List of Tuples, received outer: {type(qData)}, inner: {type(qData[0])}")
-        
+    async def on_queryAddMember(self,member_id:int,member_name:str,member_display_name:str):
         try:
-            qData = qData[0]
             Session = sessionmaker(bind=engine)
             session = Session()
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
             if query_result:
                 # Update
-                query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).update({BotUsers.name:qData[1], BotUsers.display_name:qData[2]})
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.name:member_name, BotUsers.display_name:member_display_name})
             else:
                 # Insert
-                session.add(BotUsers(user_id=qData[0],name=qData[1],display_name=qData[2],last_dole=datetime.now()))
+                session.add(BotUsers(user_id=member_id,name=member_name,display_name=member_display_name,last_dole=datetime.now()))
 
             session.commit()
 
@@ -71,21 +67,21 @@ class sql(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_populatedb(self,qData):
+    async def on_populatedb(self):
         for guild in self.bot.guilds:
             for member in guild.members:
                 if not member.bot:
-                    await self.on_queryAddMember([(member.id, member.name, member.display_name)])
+                    await self.on_queryAddMember(member.id, member.name, member.display_name)
 
 
     #Add win to winners table
     @commands.Cog.listener()
-    async def on_queryAddWin(self,qData): #qData expects [(gamename,winner.id,winning_amount(or None))]
+    async def on_queryAddWin(self,game_type:str,winner_id:int,win_amount): #Set win_amount to None if no pot
 
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
-            session.add(BotScores(game=qData[0][0],winner_id=qData[0][1],time=datetime.now(),winnings=qData[0][2]))
+            session.add(BotScores(game=game_type,winner_id=winner_id,time=datetime.now(),winnings=win_amount))
             session.commit()
 
         except:
@@ -111,12 +107,12 @@ class sql(commands.Cog):
 
 
     #Check bank & return value. Should mostly be used internally
-    async def queryCheckBalance(self,qData): #qData expects (member.id,). Single pass only
+    async def queryCheckBalance(self,member_id:int):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
             if query_result:
                 # Update
@@ -128,82 +124,74 @@ class sql(commands.Cog):
             raise
     
     #Attempt to withdraw. Automatically checks balance so don't call separately
-    async def queryWithdraw(self,qData): #qData expects [(withdraw_amount,member_id)]
-        bal = await self.queryCheckBalance((qData[0][1],))
-        if bal >= qData[0][0]:
+    async def queryWithdraw(self,member_id:int,withdraw_amount:int):
+        bal = await self.queryCheckBalance(member_id)
+        if bal >= withdraw_amount:
             Session = sessionmaker(bind=engine)
             session = Session()
-
             try:
-                query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][1]).update({BotUsers.bank:BotUsers.bank - qData[0][0]})
+                session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank:BotUsers.bank - withdraw_amount})
                 session.commit()
                 return True
             except:
-                raise
-        
+                raise  
+        else:
+            return False      
 
-    # #Pay
-    async def queryPay(self,qData): #qData expects [(pay_amount,member_id)]
+    #Pay
+    async def queryPay(self,member_id:int,pay_amount:int):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][1]).update({BotUsers.bank: BotUsers.bank + qData[0][0] })
+            session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank: BotUsers.bank + pay_amount})
             session.commit()
             return True
         except:
             raise
     
-
-
     #Transfer - Use this wherever possible as general transfer from one ID to another
-    async def queryTransfer(self,qData): #qData expects [(pay_amount,from_member_id,to_member_id)]
-        withdraw = await self.queryWithdraw([(qData[0][0],qData[0][1])])
+    async def queryTransfer(self,from_member_id:int,to_member_id:int,transfer_amount:int):
+        withdraw = await self.queryWithdraw(from_member_id,transfer_amount)
         if withdraw:
-            await self.queryPay([(qData[0][0],qData[0][2])])
+            await self.queryPay(to_member_id,transfer_amount)
             return True
         else:
             return False
     
-    async def queryPayDole(self,qData): #qData expects [(member_id,)]
+    async def queryPayDole(self,member_id:int):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
-
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0][0]).update({BotUsers.last_dole:datetime.now()})
-
-
-
+            session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.last_dole:datetime.now()})
             session.commit()
         except:
             raise
-        await self.queryPay([(self.bot.dolePayment,qData[0][0])]) #Tie dole payments to setting
+        await self.queryPay(member_id,self.bot.dolePayment)
 
     #Dole checker. This returns their dict of bank value, and allow/disallow dole claim {value,binary allowed/blocked}
-
-
-    async def queryCheckDole(self,qData): #qData expects (member.id,)
+    async def queryCheckDole(self,member_id:int):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == qData[0]).one_or_none()
+            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
             if query_result:
-                next_dole = timedelta(seconds=0)
                 if query_result.last_dole == None:
+                    last_dole_delta = None
                     allow = True
-
                 else:
-                    if (datetime.now() - query_result.last_dole) > timedelta(seconds=self.bot.doleTimeout) and query_result.bank < self.bot.doleLimit:
+                    if (datetime.now().replace(hour=0,second=0,minute=0,microsecond=0) - query_result.last_dole.replace(hour=0,second=0,minute=0,microsecond=0)) >= timedelta(days=1) and query_result.bank < self.bot.doleLimit:
+                        last_dole_delta = None
                         allow = True
                     else:
                         allow = False
-                        next_dole = (timedelta(seconds=self.bot.doleTimeout) -  (datetime.now() - query_result.last_dole))
+                        last_dole_delta = datetime.now() - query_result.last_dole
 
                 return {
                     "balance":query_result.bank,
                     "allow":allow,
-                    "nextdole": next_dole
+                    "lastdole": last_dole_delta
                 }
             else:
                 raise

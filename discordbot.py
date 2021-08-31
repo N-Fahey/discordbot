@@ -47,7 +47,7 @@ async def on_ready():
     #Load settings
     sqlCog = self.get_cog('sql')
     settings = await sqlCog.queryRetrieveSettings()
-    await sqlCog.on_populatedb(None)
+    await sqlCog.on_populatedb()
     if isinstance(settings,dict):
         for setting in settings:
             setattr(self,setting,settings[setting])
