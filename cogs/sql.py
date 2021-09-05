@@ -214,6 +214,20 @@ class sql(commands.Cog):
             
         except:
             raise
+    
+    #Get all currency values
+    async def queryAllBanks(self):
+        try:
+            Session = sessionmaker(bind=engine)
+            session = Session()
+
+            query_result = session.query(BotUsers).all()
+            res = {}
+            for line in query_result:
+                res[line.user_id] = line.bank
+            return res
+        except:
+            raise
 
 #########################
 #      FINAL SETUP      #

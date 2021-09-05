@@ -27,6 +27,7 @@ async def get_prefix(bot,msg):
 #Setup attributes
 self = commands.Bot(command_prefix=get_prefix, intents=intents)
 self.emojiDict = {}
+self.console_listener = None
 self.vc = None
 
 #Load cogs
@@ -55,13 +56,15 @@ async def on_ready():
     else:
         raise ConnectionError(f"Failed to load settings: {settings}")
 
-    guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
-    self.dispatch("log",f"{self.user} now ready on guild: {guild.name}, guild ID: {guild.id}")
-    # populate database with users
-    
+    self.guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
+    self.dispatch("log",f"{self.user} now ready on guild: {self.guild.name}, guild ID: {self.guild.id}")
+    self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
 @self.event
 async def on_reload(ctx):
+    if self.console_listener is not None:
+        self.console_listener = None
+
     cogs = list(self.extensions)
     for cog in cogs:
         self.unload_extension(cog)
@@ -70,8 +73,13 @@ async def on_reload(ctx):
         if file.endswith(".py"):
             self.load_extension(f"cogs.{file}"[:-3])
             cogs.append(file[:-3])
-    
-    await ctx.send(f"Reloaded extensions: {', '.join(cogs)}")
+
+    if ctx is None:
+        print(f"Reloaded extensions: {', '.join(cogs)}")
+    else:
+        await ctx.send(f"Reloaded extensions: {', '.join(cogs)}")
+
+    self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
 #Initialise the bot
 self.run(TOKEN)
