@@ -146,10 +146,12 @@ class CmdShell(cmd.Cmd):
                 res = await sql_cog.queryAllBanks()
                 self.bank = []
                 for member in res:
-                    self.bank.append({
-                        'member':self.bot.guild.get_member(member),
-                        'bank':res[member]
-                        })
+                    member_object = self.bot.guild.get_member(member)
+                    if member_object is not None:
+                        self.bank.append({
+                            'member':member_object,
+                            'bank':res[member]
+                            })
 
                 print('id'.ljust(2),'Name'.ljust(15),'Bank')
 
