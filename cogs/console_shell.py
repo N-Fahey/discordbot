@@ -1,4 +1,4 @@
-import cmd
+import cmd,re
 from aioconsole import ainput
 from discord.ext import commands
 from discord import TextChannel
@@ -12,7 +12,14 @@ class CmdShell(cmd.Cmd):
         self.bot = bot
         self.channels = None
         self.bank = []
-    
+
+    def get_mention_string(self,match):
+        try:
+            mention = self.bot.guild.get_member_named(match[0][1:]).mention
+            return mention
+        except:
+            return match[0]
+
     async def onecmd(self,line):
         cmd,arg,line = self.parseline(line)
         if not line:
@@ -41,7 +48,7 @@ class CmdShell(cmd.Cmd):
     #######################
     #   CUSTOM COMMANDS   #
     #######################
-    
+
     #List channels
     async def do_channels(self,arg):
         'Prints a list of all the channels available on the primary server. Use provided index to send message using say command'
@@ -52,7 +59,8 @@ class CmdShell(cmd.Cmd):
     async def do_say(self,args):
         'Send a message to the specified channel. Use channels to retrieve list of options'
         if self.channels is None:
-            self.channels = [i for i in self.bot.guild.channels if isinstance(i,TextChannel)]
+            print('Use channels first to generate channel list')
+            return
         arg_list = args.split(' ',1)
 
         try:
@@ -62,6 +70,8 @@ class CmdShell(cmd.Cmd):
             return
 
         if 0 <= arg_list[0] <= len(self.channels) - 1:
+            #Replace @name with internal mention string for tagging people            
+            arg_list[1] = re.sub(r'@\S*',self.get_mention_string,arg_list[1])
             self.bot.dispatch("sendReply",self.channels[arg_list[0]],arg_list[1])
         else:
             print("Didn't recognise that index. Use channels for current list")
