@@ -39,6 +39,7 @@ Base.metadata.create_all(engine)
 class sql(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
+        self.Session = sessionmaker(bind=engine)
 
     #########################
     #    EVENT LISTENERS    #
@@ -48,19 +49,18 @@ class sql(commands.Cog):
     @commands.Cog.listener()
     async def on_queryAddMember(self,member_id:int,member_name:str,member_display_name:str):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
+            with self.Session() as session:
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
-            if query_result:
-                # Update
-                query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.name:member_name, BotUsers.display_name:member_display_name})
-            else:
-                # Insert
-                session.add(BotUsers(user_id=member_id,name=member_name,display_name=member_display_name,last_dole=datetime.now()))
+                if query_result:
+                    # Update
+                    query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.name:member_name, BotUsers.display_name:member_display_name})
+                else:
+                    # Insert
+                    session.add(BotUsers(user_id=member_id,name=member_name,display_name=member_display_name,last_dole=datetime.now()))
 
-            session.commit()
+                session.commit()
 
         except:
             raise
@@ -79,10 +79,9 @@ class sql(commands.Cog):
     async def on_queryAddWin(self,game_type:str,winner_id:int,win_amount): #Set win_amount to None if no pot
 
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            session.add(BotScores(game=game_type,winner_id=winner_id,time=datetime.now(),winnings=win_amount))
-            session.commit()
+            with self.Session() as session:
+                session.add(BotScores(game=game_type,winner_id=winner_id,time=datetime.now(),winnings=win_amount))
+                session.commit()
 
         except:
             raise
@@ -109,16 +108,15 @@ class sql(commands.Cog):
     #Check bank & return value. Should mostly be used internally
     async def queryCheckBalance(self,member_id:int):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
+            with self.Session() as session:
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
-            if query_result:
-                # Update
-                return query_result.bank
+                if query_result:
+                    # Update
+                    return query_result.bank
 
-            return 0
+                return 0
 
         except:
             raise
@@ -127,12 +125,11 @@ class sql(commands.Cog):
     async def queryWithdraw(self,member_id:int,withdraw_amount:int):
         bal = await self.queryCheckBalance(member_id)
         if bal >= withdraw_amount:
-            Session = sessionmaker(bind=engine)
-            session = Session()
             try:
-                session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank:BotUsers.bank - withdraw_amount})
-                session.commit()
-                return True
+                with self.Session() as session:
+                    session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank:BotUsers.bank - withdraw_amount})
+                    session.commit()
+                    return True
             except:
                 raise  
         else:
@@ -141,11 +138,10 @@ class sql(commands.Cog):
     #Pay
     async def queryPay(self,member_id:int,pay_amount:int):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank: BotUsers.bank + pay_amount})
-            session.commit()
-            return True
+            with self.Session() as session:
+                session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.bank: BotUsers.bank + pay_amount})
+                session.commit()
+                return True
         except:
             raise
     
@@ -160,10 +156,9 @@ class sql(commands.Cog):
     
     async def queryPayDole(self,member_id:int):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.last_dole:datetime.now()})
-            session.commit()
+            with self.Session() as session:
+                session.query(BotUsers).filter(BotUsers.user_id == member_id).update({BotUsers.last_dole:datetime.now()})
+                session.commit()
         except:
             raise
         await self.queryPay(member_id,self.bot.dolePayment)
@@ -171,46 +166,44 @@ class sql(commands.Cog):
     #Dole checker. This returns their dict of bank value, and allow/disallow dole claim {value,binary allowed/blocked}
     async def queryCheckDole(self,member_id:int):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
+            with self.Session() as session:
 
-            query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
+                query_result = session.query(BotUsers).filter(BotUsers.user_id == member_id).one_or_none()
 
-            if query_result:
-                if query_result.last_dole == None:
-                    last_dole_delta = None
-                    allow = True
-                else:
-                    if (datetime.now().replace(hour=0,second=0,minute=0,microsecond=0) - query_result.last_dole.replace(hour=0,second=0,minute=0,microsecond=0)) >= timedelta(days=1) and query_result.bank < self.bot.doleLimit:
+                if query_result:
+                    if query_result.last_dole == None:
                         last_dole_delta = None
                         allow = True
                     else:
-                        allow = False
-                        last_dole_delta = datetime.now() - query_result.last_dole
+                        if (datetime.now().replace(hour=0,second=0,minute=0,microsecond=0) - query_result.last_dole.replace(hour=0,second=0,minute=0,microsecond=0)) >= timedelta(days=1) and query_result.bank < self.bot.doleLimit:
+                            last_dole_delta = None
+                            allow = True
+                        else:
+                            allow = False
+                            last_dole_delta = datetime.now() - query_result.last_dole
 
-                return {
-                    "balance":query_result.bank,
-                    "allow":allow,
-                    "lastdole": last_dole_delta
-                }
-            else:
-                raise
+                    return {
+                        "balance":query_result.bank,
+                        "allow":allow,
+                        "lastdole": last_dole_delta
+                    }
+                else:
+                    raise
         except:
             raise
     
     #Top 10 moneys
     async def queryTop10(self):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
+            with self.Session() as session:
 
-            query_result = session.query(BotUsers).filter(BotUsers.bank != 0).order_by(BotUsers.bank.desc()).limit(10).all()
-            res = {}
+                query_result = session.query(BotUsers).filter(BotUsers.bank != 0).order_by(BotUsers.bank.desc()).limit(10).all()
+                res = {}
 
-            for line in query_result:
-                res[line.display_name] = self.bot.currencyCode + str(line.bank)
+                for line in query_result:
+                    res[line.display_name] = self.bot.currencyCode + str(line.bank)
 
-            return res
+                return res
             
         except:
             raise
@@ -218,14 +211,13 @@ class sql(commands.Cog):
     #Get all currency values
     async def queryAllBanks(self):
         try:
-            Session = sessionmaker(bind=engine)
-            session = Session()
+            with self.Session() as session:
 
-            query_result = session.query(BotUsers).all()
-            res = {}
-            for line in query_result:
-                res[line.user_id] = line.bank
-            return res
+                query_result = session.query(BotUsers).all()
+                res = {}
+                for line in query_result:
+                    res[line.user_id] = line.bank
+                return res
         except:
             raise
 
