@@ -98,20 +98,27 @@ class events(commands.Cog):
         if member.bot:
             return
         
-        if member.guild.id == 629288645257461780:            
-            if after.channel != before.channel:
-                channels = [i for i in member.guild.channels if isinstance(i,VoiceChannel)]
-                for channel in channels:
-                    if len(channel.members) == 1 and channel.members[0].id == 195114381820952577:
-                        self.bot.vc = await channel.members[0].voice.channel.connect()
-                        self.bot.dispatch("log",f"ynwa: Joined {self.bot.vc.channel.name}")
-                        break                
+        if member.guild.id == 629288645257461780 or True:
+            try:
+                target_channel = self.bot.guild.get_member(195114381820952577).voice.channel
+            except AttributeError:
+                target_channel = None
+
+            if target_channel:
+                if len(target_channel.members) == 1:
+                    if self.bot.vc:
+                        await self.bot.vc.move_to(target_channel)
                     else:
-                        if self.bot.vc is not None and self.bot.vc.is_connected() and self.bot.vc.channel == channel:
-                            self.bot.dispatch("log",f"ynwa: Leaving {self.bot.vc.channel.name}")
-                            await self.bot.vc.disconnect()
-                            self.bot.vc = None
-                            break
+                        self.bot.vc = await target_channel.connect()
+                elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
+                    await self.bot.vc.disconnect()
+                    self.bot.vc = None
+                else:
+                    pass
+            else:
+                if self.bot.vc:
+                    await self.bot.vc.disconnect()
+                    self.bot.vc = None
 
     #########################
     #    EVENT LISTENERS    #
