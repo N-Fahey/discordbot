@@ -98,7 +98,7 @@ class events(commands.Cog):
         if member.bot:
             return
         
-        if member.guild.id == 629288645257461780 or True:
+        if member.guild.id == 629288645257461780:
             try:
                 target_channel = self.bot.guild.get_member(195114381820952577).voice.channel
             except AttributeError:
