@@ -60,14 +60,18 @@ class currency(commands.Cog):
         
         await ctx.send(f"`{ctx.author.display_name}`, your balance is {self.bot.currencyCode}{bal}")
     
+    #Top10
     @commands.command(name="top10", help="View the top 10 currency holders on the server.")
     async def test(self,ctx):
         sql_cog = self.bot.get_cog('sql')
         top10 = await sql_cog.queryTop10()
-        embed = Embed(title='The 1%')
-        embed.add_field(name="Name",value='\n'.join(top10.keys()))
-        embed.add_field(name="Bank",value='\n'.join(top10.values()))
-        await ctx.send(embed=embed)
+        if top10 == {}:
+            await ctx.send('Nobody has any money')
+        else:
+            embed = Embed(title='The 1%')
+            embed.add_field(name="Name",value='\n'.join(top10.keys()))
+            embed.add_field(name="Bank",value='\n'.join(top10.values()))
+            await ctx.send(embed=embed)
             
 def setup(bot):
     bot.add_cog(currency(bot))
