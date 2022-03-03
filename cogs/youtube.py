@@ -62,12 +62,19 @@ class youtube(commands.Cog):
             await self.bot.get_user(195114381820952577).send(f"Dashcam update, but not compilation :( {res[0]}")
             return
 
-        self.bot.dispatch("log","youtube: Dashcams update! Dispatching to test server")
-        await self.bot.get_channel(629288645257461788).send(f"@everyone DASHCAMS DASHCAMS DASHCAMS {res}")
+        self.bot.dispatch("log","youtube: Dashcams update! Dispatching to first text channel")
+        await self.bot.guild.text_channels[0].send(f"*everyone DASHCAMS DASHCAMS DASHCAMS {res}")
     
     @checker.before_loop
     async def before_checker(self):
         await self.bot.wait_until_ready()
+    
+    @commands.command(name="dc",help="Resend the most recent dashcam message")
+    async def dc(self,ctx):
+        with open('cogs/dashcam.txt','r') as dc_file:
+            dc_link = dc_file.read()
+        
+        await ctx.reply(f"DASHCAMS DASHCAMS DASHCAMS {dc_link}")
 
 #########################
 #      FINAL SETUP      #
