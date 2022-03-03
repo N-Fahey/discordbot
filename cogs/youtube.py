@@ -63,7 +63,7 @@ class youtube(commands.Cog):
             return
 
         self.bot.dispatch("log","youtube: Dashcams update! Dispatching to first text channel")
-        await self.bot.guild.text_channels[0].send(f"*everyone DASHCAMS DASHCAMS DASHCAMS {res}")
+        await self.bot.guild.text_channels[0].send(f"@everyone DASHCAMS DASHCAMS DASHCAMS {res}")
     
     @checker.before_loop
     async def before_checker(self):
