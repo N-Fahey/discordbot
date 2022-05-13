@@ -25,7 +25,9 @@ class events(commands.Cog):
             "what":"ever.",
             "why":"are you still talking?",
             "when":"did I ask?",
-            "how":"uhh.. how did I ask?"}
+            "how":"uhh.. how did I ask?",
+            "bazinga":"https://i.kym-cdn.com/entries/icons/original/000/011/946/Bazinga-Sheldon-Cooper-The-Big-Bang-Theory-85831432.jpg"
+            }
 
         s = str.lower(msg.content.translate(str.maketrans('', '', string.punctuation))).replace(" ","")
 
