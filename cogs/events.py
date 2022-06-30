@@ -1,6 +1,5 @@
 from discord.ext import commands
-from discord import VoiceChannel
-import string, datetime, asyncio
+import string, datetime, asyncio, openai
 
 #########################
 #       Extension       #
@@ -37,7 +36,11 @@ class events(commands.Cog):
         if msg.channel.id == 872774897926025266:
             self.bot.dispatch("log",f"on_message: Deleted spy message from: {msg.author}. Message: {msg.content}")
             self.bot.dispatch("delete_message",msg)
-
+        
+        #AI responses
+        if self.bot.user.mentioned_in(msg):
+            if msg.content.startswith(self.bot.user.mention):
+                self.bot.dispatch("bot_mentioned",msg)
     
     #Add new members to db
     @commands.Cog.listener()
@@ -153,6 +156,28 @@ class events(commands.Cog):
     async def on_delete_message(self, message):
         await asyncio.sleep(5)
         await message.delete()
+    
+    #AI Responses
+
+    @commands.Cog.listener()
+    async def on_bot_mentioned(self, message):
+        prompt = message.content.removeprefix(self.bot.user.mention).strip()
+        openai.api_key = self.bot.ai_key
+        max_tokens = 32
+        if message.author.id == 195114381820952577:
+            max_tokens = 256
+
+        response = openai.Completion.create(
+            model='text-ada-001',
+            prompt=prompt,
+            max_tokens=max_tokens)
+        response_text = response['choices'][0]['text'].strip()
+
+        self.bot.dispatch('log',
+        f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response['usage']['prompt_tokens']}, {response['usage']['completion_tokens']}, {response['usage']['total_tokens']}")
+        
+        await message.reply(response_text)
+
 
 #########################
 #      FINAL SETUP      #
