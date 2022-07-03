@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILDID')
+OPENAI_KEY = os.getenv('OPENAI_KEY')
 
 #Intents
 intents = discord.Intents.default()
@@ -14,7 +15,8 @@ intents.reactions = True
 
 async def get_prefix(bot,msg):
     #Allows using mention instead of prefix
-    prefixes = commands.when_mentioned(bot,msg)
+    #prefixes = commands.when_mentioned(bot,msg)
+    prefixes = []
 
     if hasattr(bot,"prefixes"):
         for i in bot.prefixes:
@@ -29,6 +31,7 @@ self = commands.Bot(command_prefix=get_prefix, intents=intents)
 self.emojiDict = {}
 self.console_listener = None
 self.vc = None
+self.ai_key = OPENAI_KEY
 
 #Load cogs
 cogs = []

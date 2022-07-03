@@ -1,6 +1,5 @@
 from discord.ext import commands
-from discord import VoiceChannel
-import string, datetime, asyncio
+import string, datetime, asyncio, openai
 
 #########################
 #       Extension       #
@@ -39,7 +38,17 @@ class events(commands.Cog):
         if msg.channel.id == 872774897926025266:
             self.bot.dispatch("log",f"on_message: Deleted spy message from: {msg.author}. Message: {msg.content}")
             self.bot.dispatch("delete_message",msg)
-
+        
+        #AI responses
+        if self.bot.user.mentioned_in(msg):
+            if msg.content.startswith(self.bot.user.mention):
+                self.bot.dispatch("bot_mentioned",msg)
+        
+        #AI responses for direct replies to the bot
+        if msg.reference is not None:
+            if msg.reference.cached_message is not None:
+                if msg.reference.cached_message.author == self.bot.user:
+                    self.bot.dispatch("bot_mentioned",msg)
     
     #Add new members to db
     @commands.Cog.listener()
@@ -155,6 +164,55 @@ class events(commands.Cog):
     async def on_delete_message(self, message):
         await asyncio.sleep(5)
         await message.delete()
+    
+    #AI Responses
+
+    @commands.Cog.listener()
+    async def on_bot_mentioned(self, message):
+        #Start simulating typing for extra immersion
+        async with message.channel.typing():
+            prompt = message.content.removeprefix(self.bot.user.mention).strip()
+            openai.api_key = self.bot.ai_key
+            max_tokens = self.bot.ai_tokens_default
+            model = self.bot.ai_model
+
+            #Check moderation first
+            moderation_response = openai.Moderation.create(
+                input=prompt
+            )
+            #If it's naughty, then stop, and log reason
+            if moderation_response['results'][0]['flagged']:
+                naughty_string = ''
+                for category,flag in moderation_response['results'][0]['categories'].items():
+                    if flag:
+                        naughty_string += category + ","
+                naughty_string = naughty_string.removesuffix(",")
+            
+                self.bot.dispatch('log',
+                f"OpenAI: {message.author} attempted to use AI but was moderated on input: '{prompt}'. Flagged categories: {naughty_string}")
+                await message.reply("I'm not responding to that")
+                return
+
+
+            #Give fish extra powers! wow lucky fish !
+            if message.author.id == 195114381820952577:
+                max_tokens = self.bot.ai_tokens_fish
+
+            #Create the response itself
+            response = openai.Completion.create(
+                model=model,
+                prompt=prompt,
+                temperature=0.9,
+                max_tokens=max_tokens)
+
+            response_text = response['choices'][0]['text'].strip()
+
+            self.bot.dispatch('log',
+            f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response['usage']['prompt_tokens']}, {response['usage']['completion_tokens']}, {response['usage']['total_tokens']}")
+
+        #Stop typing, and send reply 
+        await message.reply(response_text)
+
 
 #########################
 #      FINAL SETUP      #
