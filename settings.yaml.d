@@ -5,6 +5,8 @@ currencyCode: "߾"
 dolePayment: 100
 doleLimit: 1000
 audio_bite_cooldown_seconds: 15
+ai_tokens_default: 32
+ai_tokens_fish: 256
 
 prettyGames:
   russianroulette: "Russian Roulette"
