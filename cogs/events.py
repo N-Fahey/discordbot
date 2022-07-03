@@ -172,6 +172,7 @@ class events(commands.Cog):
             prompt = message.content.removeprefix(self.bot.user.mention).strip()
             openai.api_key = self.bot.ai_key
             max_tokens = self.bot.ai_tokens_default
+            model = self.bot.ai_model
 
             #Check moderation first
             moderation_response = openai.Moderation.create(
@@ -197,8 +198,9 @@ class events(commands.Cog):
 
             #Create the response itself
             response = openai.Completion.create(
-                model='text-ada-001',
+                model=model,
                 prompt=prompt,
+                temperature=0.9,
                 max_tokens=max_tokens)
 
             response_text = response['choices'][0]['text'].strip()
