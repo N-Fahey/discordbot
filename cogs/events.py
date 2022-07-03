@@ -171,7 +171,11 @@ class events(commands.Cog):
     async def on_bot_mentioned(self, message):
         #Start simulating typing for extra immersion
         async with message.channel.typing():
-            prompt = message.content.removeprefix(self.bot.user.mention).strip()
+            #prompt = message.content.removeprefix(self.bot.user.mention).strip()
+            if self.bot.user.mention in message.content:
+                prompt = message.content[len(self.bot.user.mention):].strip()
+            else:
+                prompt = message.content
             openai.api_key = self.bot.ai_key
             max_tokens = self.bot.ai_tokens_default
             model = self.bot.ai_model
@@ -186,7 +190,7 @@ class events(commands.Cog):
                 for category,flag in moderation_response['results'][0]['categories'].items():
                     if flag:
                         naughty_string += category + ","
-                naughty_string = naughty_string.removesuffix(",")
+                naughty_string = naughty_string[:-1]
             
                 self.bot.dispatch('log',
                 f"OpenAI: {message.author} attempted to use AI but was moderated on input: '{prompt}'. Flagged categories: {naughty_string}")
