@@ -209,7 +209,7 @@ class events(commands.Cog):
                 temperature=0.9,
                 max_tokens=max_tokens)
 
-            response_text = response['choices'][0]['text'].strip()
+            response_text = response['choices'][0]['text'].strip()[:2000]
 
             self.bot.dispatch('log',
             f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response['usage']['prompt_tokens']}, {response['usage']['completion_tokens']}, {response['usage']['total_tokens']}")
