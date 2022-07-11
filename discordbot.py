@@ -12,6 +12,7 @@ OPENAI_KEY = os.getenv('OPENAI_KEY')
 #Intents
 intents = discord.Intents.default()
 intents.members = True
+intents.message_content = True
 intents.reactions = True
 
 async def get_prefix(bot,msg):
