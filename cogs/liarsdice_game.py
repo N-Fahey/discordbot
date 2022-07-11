@@ -260,5 +260,5 @@ class liarsdice_game(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(liarsdice_game(bot))
+async def setup(bot):
+    await bot.add_cog(liarsdice_game(bot))

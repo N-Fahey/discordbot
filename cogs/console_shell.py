@@ -219,5 +219,5 @@ class console_shell(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(console_shell(bot))
+async def setup(bot):
+    await bot.add_cog(console_shell(bot))

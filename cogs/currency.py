@@ -73,5 +73,5 @@ class currency(commands.Cog):
             embed.add_field(name="Bank",value='\n'.join(top10.values()))
             await ctx.send(embed=embed)
             
-def setup(bot):
-    bot.add_cog(currency(bot))
+async def setup(bot):
+    await bot.add_cog(currency(bot))

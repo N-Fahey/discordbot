@@ -1,6 +1,7 @@
 import os,discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from asyncio import run
 
 #Get required environment variables
 load_dotenv()
@@ -36,10 +37,10 @@ self.ai_key = OPENAI_KEY
 #Load cogs
 cogs = []
 
-if __name__ == "__main__":
+async def load_extensions():    
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            self.load_extension(f"cogs.{file}"[:-3])
+            await self.load_extension(f"cogs.{file}"[:-3])
             cogs.append(file[:-3])
 
 #Setup event, triggers on login & refresh
@@ -70,11 +71,11 @@ async def on_reload(ctx):
 
     cogs = list(self.extensions)
     for cog in cogs:
-        self.unload_extension(cog)
+        await self.unload_extension(cog)
     cogs = []
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            self.load_extension(f"cogs.{file}"[:-3])
+            await self.load_extension(f"cogs.{file}"[:-3])
             cogs.append(file[:-3])
 
     if ctx is None:
@@ -85,4 +86,9 @@ async def on_reload(ctx):
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
 #Initialise the bot
-self.run(TOKEN)
+async def main():
+    async with self:
+        await load_extensions()
+        await self.start(TOKEN)
+
+run(main())
