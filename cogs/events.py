@@ -51,6 +51,7 @@ class events(commands.Cog):
                     tagged_fish = True
             if tagged_anyone and not tagged_fish:
                 await msg.reply("And your thoughts as well, Mr. <@195114381820952577>")
+                self.bot.dispatch("log",f"on_message: I included Mr Fish in the tags too!")
 
     
     #Add new members to db
