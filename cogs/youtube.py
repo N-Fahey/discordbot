@@ -80,5 +80,5 @@ class youtube(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(youtube(bot))
+async def setup(bot):
+    await bot.add_cog(youtube(bot))

@@ -58,5 +58,5 @@ class audiobites(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(audiobites(bot))
+async def setup(bot):
+    await bot.add_cog(audiobites(bot))

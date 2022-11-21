@@ -1,6 +1,7 @@
 import os,discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from asyncio import run
 
 #Get required environment variables
 load_dotenv()
@@ -11,6 +12,7 @@ OPENAI_KEY = os.getenv('OPENAI_KEY')
 #Intents
 intents = discord.Intents.default()
 intents.members = True
+intents.message_content = True
 intents.reactions = True
 
 async def get_prefix(bot,msg):
@@ -32,20 +34,19 @@ self.emojiDict = {}
 self.console_listener = None
 self.vc = None
 self.ai_key = OPENAI_KEY
+self.loaded_cogs = []
 
-#Load cogs
-cogs = []
-
-if __name__ == "__main__":
+#load extensions
+async def load_extensions():    
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            self.load_extension(f"cogs.{file}"[:-3])
-            cogs.append(file[:-3])
+            await self.load_extension(f"cogs.{file}"[:-3])
+            self.loaded_cogs.append(file[:-3])
 
 #Setup event, triggers on login & refresh
 @self.event
 async def on_ready():
-    self.dispatch("log",f"Loaded extensions: {', '.join(cogs)}")
+    self.dispatch("log",f"Loaded extensions: {', '.join(self.loaded_cogs)}")
     self.emojiDict = {e.name:str(e) for e in self.emojis}
 
     #Load settings
@@ -68,21 +69,25 @@ async def on_reload(ctx):
     if self.console_listener is not None:
         self.console_listener = None
 
-    cogs = list(self.extensions)
-    for cog in cogs:
-        self.unload_extension(cog)
-    cogs = []
+    self.loaded_cogs = list(self.extensions)
+    for cog in self.loaded_cogs:
+        await self.unload_extension(cog)
+    self.loaded_cogs = []
     for file in os.listdir("./cogs"):
         if file.endswith(".py"):
-            self.load_extension(f"cogs.{file}"[:-3])
-            cogs.append(file[:-3])
+            await self.load_extension(f"cogs.{file}"[:-3])
+            self.loaded_cogs.append(file[:-3])
 
-    if ctx is None:
-        print(f"Reloaded extensions: {', '.join(cogs)}")
-    else:
-        await ctx.send(f"Reloaded extensions: {', '.join(cogs)}")
+    print(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
+    if ctx is not None:
+        await ctx.send(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
 
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
 #Initialise the bot
-self.run(TOKEN)
+async def main():
+    async with self:
+        await load_extensions()
+        await self.start(TOKEN)
+
+run(main())

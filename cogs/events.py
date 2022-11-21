@@ -222,5 +222,5 @@ class events(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(events(bot))
+async def setup(bot):
+    await bot.add_cog(events(bot))

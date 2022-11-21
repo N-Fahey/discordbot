@@ -44,5 +44,5 @@ class general(commands.Cog):
 #      FINAL SETUP      #
 #########################
 
-def setup(bot):
-    bot.add_cog(general(bot))
+async def setup(bot):
+    await bot.add_cog(general(bot))

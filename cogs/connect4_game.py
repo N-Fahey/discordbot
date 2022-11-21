@@ -240,5 +240,5 @@ class connect4_game(commands.Cog):
         await reaction.remove(user)
 
 
-def setup(bot):
-    bot.add_cog(connect4_game(bot))
+async def setup(bot):
+    await bot.add_cog(connect4_game(bot))
