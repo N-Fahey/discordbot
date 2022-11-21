@@ -54,7 +54,7 @@ class events(commands.Cog):
         if msg.author.id == 120826860883017728:
             mentions = msg.mentions
             if mentions and not self.bot.guild.get_member(195114381820952577) in mentions:
-                msg.reply("And your thoughts as well, Mr. <@195114381820952577>?")
+                await msg.reply("And your thoughts as well, Mr. <@195114381820952577>?")
     
     #Add new members to db
     @commands.Cog.listener()
