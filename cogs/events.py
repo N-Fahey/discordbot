@@ -40,6 +40,7 @@ class events(commands.Cog):
             self.bot.dispatch("log",f"on_message: Deleted spy message from: {msg.author}. Message: {msg.content}")
             self.bot.dispatch("delete_message",msg)
 
+        # fishy never excluded :)
         if msg.author == 120826860883017728:
             msg_tokens = msg.split()
             tagged_anyone = False
@@ -53,7 +54,17 @@ class events(commands.Cog):
                 await msg.reply("And your thoughts as well, Mr. <@195114381820952577>")
                 self.bot.dispatch("log",f"on_message: I included Mr Fish in the tags too!")
 
-    
+        # AI responses
+        if self.bot.user.mentioned_in(msg):
+            if msg.content.startswith(self.bot.user.mention):
+                self.bot.dispatch("bot_mentioned", msg)
+
+        # AI responses for direct replies to the bot
+        if msg.reference is not None:
+            if msg.reference.cached_message is not None:
+                if msg.reference.cached_message.author == self.bot.user:
+                    self.bot.dispatch("bot_mentioned", msg)
+
     #Add new members to db
     @commands.Cog.listener()
     async def on_member_join(self,member):
