@@ -15,3 +15,6 @@ __pycache__/
 
 #yaml ignore
 *.yaml
+
+#ignore idea file
+*.idea

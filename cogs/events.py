@@ -40,6 +40,18 @@ class events(commands.Cog):
             self.bot.dispatch("log",f"on_message: Deleted spy message from: {msg.author}. Message: {msg.content}")
             self.bot.dispatch("delete_message",msg)
 
+        if msg.author == 120826860883017728:
+            msg_tokens = msg.split()
+            tagged_anyone = False
+            tagged_fish = False
+            for token in msg_tokens:
+                if token.startswith("<") and token.endswith(">") and not token == "<@195114381820952577>":
+                    tagged_anyone = True
+                if token == "<@195114381820952577>":
+                    tagged_fish = True
+            if tagged_anyone and not tagged_fish:
+                await msg.reply("And your thoughts as well, Mr. <@195114381820952577>")
+
     
     #Add new members to db
     @commands.Cog.listener()
