@@ -70,7 +70,7 @@ class admin(commands.Cog):
         if not hasattr(self.bot,'admin_channel'):
             setattr(self.bot,'admin_channel',self.bot.guild.get_channel(self.bot.admin_channel_id))
         
-        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member.name} Left the guild')
+        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member} Left the guild')
         self.bot.dispatch('log',f'Admin: User {member} left the server')
 
 
@@ -80,7 +80,7 @@ class admin(commands.Cog):
         if not hasattr(self.bot,'admin_channel'):
             setattr(self.bot,'admin_channel',self.bot.guild.get_channel(self.bot.admin_channel_id))
         
-        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member.name} Joined the guild')
+        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member} Joined the guild')
         self.bot.dispatch('log',f'Admin: User {member} joined the server')
 
 
