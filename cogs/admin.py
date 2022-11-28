@@ -64,6 +64,26 @@ class admin(commands.Cog):
         self.bot.game_lobbies = []
         return True
 
+    #User leaves (inc kicked/banned)
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        if not hasattr(self.bot,'admin_channel'):
+            setattr(self.bot,'admin_channel',self.bot.guild.get_channel(self.bot.admin_channel_id))
+        
+        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member.name} Left the guild')
+        self.bot.dispatch('log',f'Admin: User {member} left the server')
+
+
+    #User joins
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        if not hasattr(self.bot,'admin_channel'):
+            setattr(self.bot,'admin_channel',self.bot.guild.get_channel(self.bot.admin_channel_id))
+        
+        self.bot.dispatch('sendReply', self.bot.admin_channel, f'{member.name} Joined the guild')
+        self.bot.dispatch('log',f'Admin: User {member} joined the server')
+
+
 #########################
 #      FINAL SETUP      #
 #########################

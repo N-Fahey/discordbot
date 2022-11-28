@@ -1,5 +1,6 @@
 prefixes: ["!"]
 game_channel_id: 876763826962464818
+admin_channel_id: 704301676277923920
 lobbyTimeout: 300
 currencyCode: "߾"
 dolePayment: 100
