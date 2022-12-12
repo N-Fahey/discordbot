@@ -1,4 +1,6 @@
-import os,discord
+import os
+import discord
+
 from discord.ext import commands
 from dotenv import load_dotenv
 from asyncio import run
@@ -87,6 +89,7 @@ async def on_reload(ctx):
 #Initialise the bot
 async def main():
     async with self:
+        discord.utils.setup_logging()
         await load_extensions()
         await self.start(TOKEN)
 

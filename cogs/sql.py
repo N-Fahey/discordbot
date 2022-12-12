@@ -10,7 +10,7 @@ from datetime import datetime,timedelta
 Base = declarative_base()
 load_dotenv()
 
-engine = create_engine(os.getenv("DB_CONNSTR"), echo = True, pool_recycle = 3600)
+engine = create_engine(os.getenv("DB_CONNSTR"), echo = False, pool_recycle = 3600)
 
 class BotUsers(Base):
     __tablename__ = 'bot_users'
