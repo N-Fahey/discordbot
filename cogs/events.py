@@ -53,7 +53,11 @@ class events(commands.Cog):
         #NEVER forget to leave mr fish out
         if msg.author.id == 120826860883017728:
             mentions = msg.mentions
-            if mentions and not self.bot.guild.get_member(195114381820952577) in mentions:
+            #If bot is only mention, PASS
+            if len(mentions) == 1 and self.bot.guild.get_member(865132094291443712) in mentions:
+                pass
+            #Check if there are mentions and FISHY isn't one of them :o
+            elif mentions and not self.bot.guild.get_member(195114381820952577) in mentions:
                 await msg.reply("And your thoughts as well, Mr. <@195114381820952577>?")
     
     #Add new members to db
