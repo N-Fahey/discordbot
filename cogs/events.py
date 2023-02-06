@@ -49,12 +49,6 @@ class events(commands.Cog):
             if msg.reference.cached_message is not None:
                 if msg.reference.cached_message.author == self.bot.user:
                     self.bot.dispatch("bot_mentioned",msg)
-
-        #NEVER forget to leave mr fish out
-        if msg.author.id == 120826860883017728:
-            mentions = msg.mentions
-            if mentions and not self.bot.guild.get_member(195114381820952577) in mentions:
-                await msg.reply("And your thoughts as well, Mr. <@195114381820952577>?")
     
     #Add new members to db
     @commands.Cog.listener()
