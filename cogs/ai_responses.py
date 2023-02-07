@@ -74,10 +74,18 @@ class ai_responses(commands.Cog):
     #Image generation
     @commands.Cog.listener()
     async def on_ai_image(self, message, prompt):
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size="1024x1024")
+
+        try:
+            response = openai.Image.create(
+                prompt=prompt,
+                n=1,
+                size="1024x1024")
+        except openai.error.OpenAIError as e:
+            self.bot.dispatch('log',
+            f"OpenAI: {message.author} attempted to use image AI but was moderated on input: '{prompt}'. Error: '{e}'")
+            await message.reply("I'm not responding to that")
+            return
+
         
         image_url = response['data'][0]['url']
         
