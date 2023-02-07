@@ -14,20 +14,25 @@ class ai_responses(commands.Cog):
     #    EVENT LISTENERS    #
     #########################
 
- #AI Responses
-
+    #Handle bot mentions
     @commands.Cog.listener()
     async def on_bot_mentioned(self, message):
         #Start simulating typing for extra immersion
         async with message.channel.typing():
-            #prompt = message.content.removeprefix(self.bot.user.mention).strip()
             if self.bot.user.mention in message.content:
                 prompt = message.content[len(self.bot.user.mention):].strip()
             else:
                 prompt = message.content
+
             openai.api_key = self.bot.ai_key
             max_tokens = self.bot.ai_tokens_default
             model = self.bot.ai_model
+
+            #Pretty pictures :)
+            if prompt.lower().startswith("draw a picture of "):
+                prompt = prompt.removeprefix("draw a picture of ")
+                self.bot.dispatch("ai_image", message, prompt)
+                return
 
             #Check moderation first
             moderation_response = openai.Moderation.create(
@@ -66,6 +71,21 @@ class ai_responses(commands.Cog):
         #Stop typing, and send reply 
         await message.reply(response_text)
 
+    #Image generation
+    @commands.Cog.listener()
+    async def on_ai_image(self, message, prompt):
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="1024x1024")
+        
+        image_url = response['data'][0]['url']
+        
+        self.bot.dispatch('log',
+        f"OpenAI: {message.author} used the AI to generate an image. Prompt: '{prompt}', Image url: '{image_url}'")
+
+        await message.reply(image_url)
+        
 
 #########################
 #      FINAL SETUP      #
