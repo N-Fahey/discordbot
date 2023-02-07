@@ -30,7 +30,7 @@ class ai_responses(commands.Cog):
 
             #Pretty pictures :)
             if prompt.lower().startswith("draw a picture of "):
-                prompt = prompt.removeprefix("draw a picture of ")
+                prompt = prompt[18:]
                 self.bot.dispatch("ai_image", message, prompt)
                 return
 
