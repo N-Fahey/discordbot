@@ -29,8 +29,8 @@ class ai_responses(commands.Cog):
             model = self.bot.ai_model
 
             #Pretty pictures :)
-            if prompt.lower().startswith("draw a picture of "):
-                prompt = prompt[18:]
+            if prompt.lower().startswith("draw "):
+                prompt = prompt[5:]
                 self.bot.dispatch("ai_image", message, prompt)
                 return
 
