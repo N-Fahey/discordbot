@@ -28,6 +28,14 @@ class BotScores(Base):
     game = Column('game', String(200))
     winnings = Column('winnings',BigInteger)
 
+class BotAILog(Base):
+    __tablename__ = 'bot_ai_log'
+    uid = Column('id', Integer, primary_key=True)
+    time = Column('time', DateTime)
+    user_id = Column('user_id', BigInteger)    
+    type = Column('type', String(200))
+    tokens = Column('usage_tokens', BigInteger)
+
 
 Base.metadata.create_all(engine)
 
@@ -86,6 +94,15 @@ class sql(commands.Cog):
         except:
             raise
 
+    #AI Usage Logging
+    @commands.Cog.listener()
+    async def on_queryAILog(self, user_id:int, ai_type:str, tokens:int):
+        try:
+            with self.Session() as session:
+                session.add(BotAILog(time=datetime.now(), user_id=user_id, type=ai_type, tokens=tokens))
+                session.commit()
+        except:
+            raise
 
     
     #########################

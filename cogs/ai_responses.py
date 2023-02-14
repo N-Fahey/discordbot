@@ -68,6 +68,8 @@ class ai_responses(commands.Cog):
             self.bot.dispatch('log',
             f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response['usage']['prompt_tokens']}, {response['usage']['completion_tokens']}, {response['usage']['total_tokens']}")
 
+            self.bot.dispatch('queryAILog', user_id = message.author.id, ai_type = 'text', tokens = response['usage']['total_tokens'])
+
         #Stop typing, and send reply 
         await message.reply(response_text)
 
@@ -91,6 +93,8 @@ class ai_responses(commands.Cog):
         
         self.bot.dispatch('log',
         f"OpenAI: {message.author} used the AI to generate an image. Prompt: '{prompt}', Image url: '{image_url}'")
+        #1 image cost = $0.02, same as 1000 tokens
+        self.bot.dispatch('queryAILog', user_id = message.author.id, ai_type = 'image', tokens = 1000)
 
         await message.reply(image_url)
         
