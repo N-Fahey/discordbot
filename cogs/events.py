@@ -106,30 +106,33 @@ class events(commands.Cog):
     #YNWA
     @commands.Cog.listener()
     async def on_voice_state_update(self,member,before,after):
-        if member.bot:
+        
+        if member.guild.id != 629288645257461780:
             return
         
-        if member.guild.id == 629288645257461780:
-            try:
-                target_channel = self.bot.guild.get_member(195114381820952577).voice.channel
-            except AttributeError:
-                target_channel = None
+        try:
+            target_channel = self.bot.guild.get_member(195114381820952577).voice.channel
+        except AttributeError:
+            target_channel = None
 
-            if target_channel:
-                if len(target_channel.members) == 1:
-                    if self.bot.vc:
-                        await self.bot.vc.move_to(target_channel)
-                    else:
-                        self.bot.vc = await target_channel.connect()
-                elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
-                    await self.bot.vc.disconnect()
-                    self.bot.vc = None
-                else:
-                    pass
-            else:
+        if target_channel:
+            if len(target_channel.members) == 1:
                 if self.bot.vc:
-                    await self.bot.vc.disconnect()
-                    self.bot.vc = None
+                    if self.bot.vc_channel == target_channel:
+                        return
+                    
+                    await self.bot.vc.move_to(target_channel)
+                else:
+                    self.bot.vc = await target_channel.connect()
+            elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
+                await self.bot.vc.disconnect()
+                self.bot.vc = None
+            else:
+                pass
+        else:
+            if self.bot.vc:
+                await self.bot.vc.disconnect()
+                self.bot.vc = None
 
     #########################
     #    EVENT LISTENERS    #
