@@ -118,7 +118,7 @@ class events(commands.Cog):
         if target_channel:
             if len(target_channel.members) == 1:
                 if self.bot.vc:
-                    if self.bot.vc_channel == target_channel:
+                    if self.bot.vc.channel == target_channel:
                         return
                     
                     await self.bot.vc.move_to(target_channel)
