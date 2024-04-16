@@ -125,14 +125,12 @@ class events(commands.Cog):
                 else:
                     self.bot.vc = await target_channel.connect()
             elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
-                await self.bot.vc.disconnect()
-                self.bot.vc = None
+                self.bot.dispatch('vc_disconnect')
             else:
                 pass
         else:
             if self.bot.vc:
-                await self.bot.vc.disconnect()
-                self.bot.vc = None
+                self.bot.dispatch('vc_disconnect')
 
     #########################
     #    EVENT LISTENERS    #
@@ -161,6 +159,14 @@ class events(commands.Cog):
                 raise
             else:
                 raise
+    
+    @commands.Cog.listener()
+    async def on_vc_disconnect(self):
+        if self.bot.vc:
+            await self.bot.vc.disconnect(force=True)
+            if not self.bot.vc.is_connected():
+                print("Deleting Voice Client")
+                self.bot.vc = None
     
     #Message deleter
     @commands.Cog.listener()
