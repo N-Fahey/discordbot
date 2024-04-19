@@ -165,7 +165,7 @@ class events(commands.Cog):
         if self.bot.vc:
             await self.bot.vc.disconnect(force=True)
             if not self.bot.vc.is_connected():
-                print("Deleting Voice Client")
+                self.bot.dispatch('log',"Deleting Voice Client")
                 self.bot.vc = None
     
     #Message deleter
