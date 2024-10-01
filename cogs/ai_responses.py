@@ -42,7 +42,7 @@ class ai_responses(commands.Cog):
             #If it's naughty, then stop, and log reason
             if moderation_response.results[0].flagged:
                 naughty_string = ''
-                for category,flag in moderation_response['results'][0]['categories'].items():
+                for category,flag in moderation_response.results[0].categories:
                     if flag:
                         naughty_string += category + ","
                 naughty_string = naughty_string[:-1]
