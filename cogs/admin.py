@@ -18,6 +18,16 @@ class admin(commands.Cog):
     async def test(self,ctx):
         pass
 
+    #Bot AI toggle
+    @commands.command(name="ai", help="AI responses on/off")
+    @commands.has_permissions(administrator=True)
+    async def ai(self,ctx,arg=None):
+        if arg is not None:
+            toggle = arg.strip().lower() in ("true", "yes", "on", "1", "t", "y")
+            self.bot.ai_toggle = toggle
+            self.bot.dispatch('log',f'OpenAI: Responses toggled {"On" if toggle else "Off"}')
+        
+        await ctx.reply("On" if self.bot.ai_toggle else "Off")
 
     #Eval
     @commands.command(name="eval")
