@@ -8,7 +8,9 @@ doleLimit: 1000
 audio_bite_cooldown_seconds: 15
 ai_tokens_default: 32
 ai_tokens_fish: 256
-ai_model: "gpt-3.5-turbo"
+ai_model: "gpt-4o"
+ai_toggle: True
+ai_sysprompt: "You are a helpful assistant."
 
 prettyGames:
   russianroulette: "Russian Roulette"
