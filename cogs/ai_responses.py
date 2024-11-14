@@ -18,6 +18,10 @@ class ai_responses(commands.Cog):
     @commands.Cog.listener()
     async def on_bot_mentioned(self, message):
         if not self.bot.ai_toggle: return
+
+        #Check if message is reply to an existing bot msg (conversation trigger)
+        is_reply = True if message.reference is not None else False
+
         #Start simulating typing for extra immersion
         async with message.channel.typing():
             if self.bot.user.mention in message.content:
@@ -57,14 +61,30 @@ class ai_responses(commands.Cog):
             if message.author.id == 195114381820952577:
                 max_tokens = self.bot.ai_tokens_fish
 
-            #Create the response itself
+            #Check if message is a response & create conversation
+            ai_messages= [{"role":"system", "content":self.bot.ai_sysprompt}]
+            if is_reply:
+                sql_cog = self.bot.get_cog('sql')
+                resp = await sql_cog.queryAIMessages(message_id = message.reference.message_id)
+                msglog = resp['log']
+                base_message_id = resp['base_message_id']
+
+                for line in msglog:
+                    ai_messages.append({
+                        'role':line['role'],
+                        'content':line['text']
+                    })
+
+            else:
+                base_message_id = message.id
+            
+            ai_messages.append({"role":"user", "content":prompt})
+
+            #Create the response
             response = openai.chat.completions.create(
                 model=model,
                 #prompt=prompt,
-                messages=[
-                    {"role":"system", "content":self.bot.ai_sysprompt},
-                    {"role":"user", "content":prompt}
-                ],
+                messages=ai_messages,
                 temperature=0.9,
                 max_tokens=max_tokens)
 
@@ -74,9 +94,12 @@ class ai_responses(commands.Cog):
             f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response.usage.prompt_tokens}, {response.usage.completion_tokens}, {response.usage.total_tokens}")
 
             self.bot.dispatch('queryAILog', user_id = message.author.id, ai_type = 'text', tokens = response.usage.total_tokens)
+            self.bot.dispatch('queryAIMessageAdd', base_message_id=base_message_id, message_id=message.id, user_id=message.author.id, role='user', message_text=prompt)
 
         #Stop typing, and send reply 
-        await message.reply(response_text)
+        reply_message = await message.reply(response_text)
+        #Add the bot reply to the log
+        self.bot.dispatch('queryAIMessageAdd', base_message_id = base_message_id, message_id=reply_message.id, user_id=self.bot.user.id, role='assistant', message_text=response_text)
 
     #Image generation
     @commands.Cog.listener()
