@@ -10,7 +10,7 @@ from datetime import datetime,timedelta
 Base = declarative_base()
 load_dotenv()
 
-engine = create_engine(os.getenv("DB_CONNSTR"), echo = False, pool_recycle = 3600)
+engine = create_engine(os.getenv("DB_CONNSTR")+"?charset=utf8mb4", echo = False, pool_recycle = 3600)
 
 class BotUsers(Base):
     __tablename__ = 'bot_users'
@@ -36,6 +36,15 @@ class BotAILog(Base):
     type = Column('type', String(200))
     tokens = Column('usage_tokens', BigInteger)
 
+class BotAIMessageLog(Base):
+    __tablename__ = 'bot_ai_message_log'
+    uid = Column('id', Integer, primary_key=True)
+    time = Column('time', DateTime)
+    base_message_id = Column('base_message_id', BigInteger)
+    message_id = Column('message_id', BigInteger)
+    user_id = Column('user_id', BigInteger)
+    role = Column('role', String(20))
+    message_text = Column('message_text', String(2000))
 
 Base.metadata.create_all(engine)
 
@@ -100,6 +109,16 @@ class sql(commands.Cog):
         try:
             with self.Session() as session:
                 session.add(BotAILog(time=datetime.now(), user_id=user_id, type=ai_type, tokens=tokens))
+                session.commit()
+        except:
+            raise
+    
+    #AI Conversations
+    @commands.Cog.listener()
+    async def on_queryAIMessageAdd(self, base_message_id, message_id, user_id, role, message_text):
+        try:
+            with self.Session() as session:
+                session.add(BotAIMessageLog(time=datetime.now(), base_message_id=base_message_id, message_id=message_id, user_id=user_id, role=role, message_text=message_text))
                 session.commit()
         except:
             raise
@@ -237,6 +256,30 @@ class sql(commands.Cog):
                 return res
         except:
             raise
+    
+    #Get AI Conversation messages
+    async def queryAIMessages(self, message_id:int):
+        try:
+            with self.Session() as session:
+                query_base_id = session.query(BotAIMessageLog).filter(BotAIMessageLog.message_id == message_id).one_or_none()
+                base_message_id = query_base_id.base_message_id
+
+                res = []
+                query_result = session.query(BotAIMessageLog).filter(
+                    BotAIMessageLog.base_message_id == base_message_id,
+                    BotAIMessageLog.message_id <= message_id)
+                for line in query_result:
+                    res.append({
+                        'role':line.role,
+                        'text':line.message_text
+                    })
+                return {
+                    'log':res,
+                    'base_message_id':base_message_id
+                    }
+        except:
+            raise
+
 
 #########################
 #      FINAL SETUP      #
