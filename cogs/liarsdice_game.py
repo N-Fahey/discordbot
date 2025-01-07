@@ -214,7 +214,7 @@ class liarsdice_game(commands.Cog):
 
         if res[1] == "continue" or res[1] == "end":
             if res[0] == ctx.author:
-                logmsg = f"liarsdice: {ctx.author} called liar against {res[0]} incorrectly. {ctx.author} removed from game."
+                logmsg = f"liarsdice: {ctx.author} called liar against {lastBet[2]} incorrectly. {ctx.author} removed from game."
                 reply = f"Wrong, total number of {lastBet[1]}'s was: {totals[lastBet[1]]}. `{res[0].display_name}` loses!"
             elif res[0] == lastBet[2]:
                 logmsg = f"liarsdice: {ctx.author} called liar against {res[0]} correctly. {res[0]} removed from game."
