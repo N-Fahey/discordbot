@@ -295,6 +295,10 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,"You're the lobby owner! You can only leave by cancelling the lobby with !cancel.")
             return
         
+        if member_lobby.in_game:
+            self.bot.dispatch("sendReply",ctx,"You can't leave once the game has started!")
+            return
+        
         if member_lobby.pot is not None:
             sql_cog = self.bot.get_cog('sql')
             await sql_cog.queryPay(ctx.author.id,member_lobby.pot.pop(ctx.author))
