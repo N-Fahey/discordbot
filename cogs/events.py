@@ -126,7 +126,7 @@ class events(commands.Cog):
                     self.bot.vc = await target_channel.connect()
             elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
                 self.bot.dispatch('vc_disconnect')
-            elif self.bot.vc and len(self.bot.vc.channel) == 1: # bot is alone
+            elif self.bot.vc and len(self.bot.vc.channel.members) == 1: # bot is alone
                 self.bot.dispatch('vc_disconnect')
             else:
                 pass
