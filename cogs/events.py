@@ -1,5 +1,6 @@
 from discord.ext import commands
 import string, datetime, asyncio
+from random import randint
 
 #########################
 #       Extension       #
@@ -49,6 +50,9 @@ class events(commands.Cog):
             if msg.reference.cached_message is not None:
                 if msg.reference.cached_message.author == self.bot.user:
                     self.bot.dispatch("bot_mentioned",msg)
+
+	if randint(1, 1000000) == 999999:
+	    msg.auther.ban(reason="shit luck better luck next time")
     
     #Add new members to db
     @commands.Cog.listener()
@@ -109,8 +113,8 @@ class events(commands.Cog):
         #Don't do on test guild
         if member.guild.id != 629288645257461780:
             return
-			
-		#Ignore bot changes
+
+	#Ignore bot changes
         if member.bot:
             return
 
