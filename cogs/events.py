@@ -26,7 +26,8 @@ class events(commands.Cog):
             "why":"are you still talking?",
             "when":"did I ask?",
             "how":"is my cow?",
-            "bazinga":"https://i.kym-cdn.com/entries/icons/original/000/011/946/Bazinga-Sheldon-Cooper-The-Big-Bang-Theory-85831432.jpg"
+            "bazinga":"https://i.kym-cdn.com/entries/icons/original/000/011/946/Bazinga-Sheldon-Cooper-The-Big-Bang-Theory-85831432.jpg",
+            "test":"test"
             }
 
         s = str.lower(msg.content.translate(str.maketrans('', '', string.punctuation))).replace(" ","")
@@ -50,11 +51,11 @@ class events(commands.Cog):
             if msg.reference.cached_message is not None:
                 if msg.reference.cached_message.author == self.bot.user:
                     self.bot.dispatch("bot_mentioned",msg)
-
-	if randint(1, 1000000) == 999999:
-	    await msg.reply("rip bozo")
-	    await asyncio.sleep(5)
-	    msg.author.ban(reason="shit luck better luck next time")
+                    
+        if randint(1, 1000000) == 999999:
+            await msg.reply("rip bozo")
+            await asyncio.sleep(5)
+            msg.author.ban(reason="shit luck better luck next time")
     
     #Add new members to db
     @commands.Cog.listener()
