@@ -24,7 +24,7 @@ class events(commands.Cog):
             "what":"ever.",
             "why":"are you still talking?",
             "when":"did I ask?",
-            "how":"uhh.. how did I ask?",
+            "how":"is my cow?",
             "bazinga":"https://i.kym-cdn.com/entries/icons/original/000/011/946/Bazinga-Sheldon-Cooper-The-Big-Bang-Theory-85831432.jpg"
             }
 
@@ -106,33 +106,45 @@ class events(commands.Cog):
     #YNWA
     @commands.Cog.listener()
     async def on_voice_state_update(self,member,before,after):
-        
+        #Don't do on test guild
         if member.guild.id != 629288645257461780:
             return
         
+        #Get fish channel / None if not connected
         try:
-            target_channel = self.bot.guild.get_member(195114381820952577).voice.channel
+            fish_channel = self.bot.guild.get_member(195114381820952577).voice.channel
         except AttributeError:
-            target_channel = None
+            fish_channel = None
 
-        if target_channel:
-            if len(target_channel.members) == 1:
-                if self.bot.vc:
-                    if self.bot.vc.channel == target_channel:
-                        return
-                    
-                    await self.bot.vc.move_to(target_channel)
-                else:
-                    self.bot.vc = await target_channel.connect()
-            elif (self.bot.user in target_channel.members and len(target_channel.members) != 2):
-                self.bot.dispatch('vc_disconnect')
-            elif self.bot.vc and len(self.bot.vc.channel.members) == 1: # bot is alone
-                self.bot.dispatch('vc_disconnect')
-            else:
-                pass
-        else:
+        #DC if fish not connected
+        if not fish_channel:
             if self.bot.vc:
+                self.bot.dispatch('log','YNWA: Fish left! Leaving...')
                 self.bot.dispatch('vc_disconnect')
+            return
+
+        #Fish in channel alone - Connect / move
+        if len(fish_channel.members) == 1:
+            if self.bot.vc: #Move if already connected
+                self.bot.dispatch('log','YNWA: Fish moved channels! Following...')
+                await self.bot.vc.move_to(fish_channel)
+                return
+            else: #Connect
+                self.bot.dispatch('log','YNWA: Fish is all alone! Joining...')
+                self.bot.vc = await fish_channel.connect()
+                return
+        
+        #If not connected stop processing
+        if not self.bot.vc:
+            return
+
+        #Just fish & bot in channel - no action
+        if len(fish_channel.members) == 2 and self.bot.user in fish_channel.members:
+            return
+
+        #2 or more members in channel, leave
+        self.bot.dispatch('log','YNWA: Fish has other friends! Leaving...')
+        self.bot.dispatch('vc_disconnect')
 
     #########################
     #    EVENT LISTENERS    #
