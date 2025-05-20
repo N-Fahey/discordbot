@@ -15,3 +15,6 @@ __pycache__/
 
 #yaml ignore
 *.yaml
+
+#screen log
+*.0

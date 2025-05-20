@@ -109,7 +109,11 @@ class events(commands.Cog):
         #Don't do on test guild
         if member.guild.id != 629288645257461780:
             return
-        
+			
+		#Ignore bot changes
+        if member.bot:
+            return
+
         #Get fish channel / None if not connected
         try:
             fish_channel = self.bot.guild.get_member(195114381820952577).voice.channel
