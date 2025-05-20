@@ -52,7 +52,7 @@ class events(commands.Cog):
                     self.bot.dispatch("bot_mentioned",msg)
 
 	if randint(1, 1000000) == 999999:
-	    msg.auther.ban(reason="shit luck better luck next time")
+	    msg.author.ban(reason="shit luck better luck next time")
     
     #Add new members to db
     @commands.Cog.listener()
