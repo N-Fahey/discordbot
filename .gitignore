@@ -18,3 +18,9 @@ __pycache__/
 
 #screen log
 *.0
+
+#ignore venv
+.venv
+
+#exceptions
+!requirements.txt
