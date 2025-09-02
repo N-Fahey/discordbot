@@ -47,13 +47,13 @@ class Slots_View(ui.View):
     
     @ui.button(label='All in',emoji='🤑', style=ButtonStyle.danger,custom_id='all_in')
     async def allin(self, interaction:Interaction, button:ui.Button):
-        confirm_view = Slots_Confirm_View(self.bot,self.lobby)
-        await interaction.response.send_message(f"Are you sure you want to go all in? This will bet your entire pot ({self.bot.currencyCode}{self.lobby.game.pot})\nDismiss this message to back out like a tiny little baby. waa waaa waaaaa.\nOh, you didn't mean to press the button? What are you going to do? Cry??? Like a baby??",view=confirm_view,ephemeral=True)
+        self.bot.dispatch("slots_reaction",interaction.user,0)
+        #confirm_view = Slots_Confirm_View(self.bot,self.lobby)
+        #await interaction.response.send_message(f"Are you sure you want to go all in? This will bet your entire pot ({self.bot.currencyCode}{self.lobby.game.pot})\nDismiss this message to back out like a tiny little baby. waa waaa waaaaa.\nOh, you didn't mean to press the button? What are you going to do? Cry??? Like a baby??",view=confirm_view,ephemeral=True)
     
     @ui.button(label='Cash out',emoji='🏧', style=ButtonStyle.blurple, custom_id='quit')
     async def cashout(self, interaction:Interaction, button:ui.Button):
         self.bot.dispatch("slots_reaction",interaction.user,'quit')
-        print('dispatched')
 
 class Slots_Confirm_View(ui.View):
     def __init__(self,bot,lobby):
