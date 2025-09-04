@@ -106,7 +106,6 @@ class Slots:
 
         self.spins += 1
         spin = self.get_spin()
-        spin = (4,4,4)
         result_multiple, outcome = self.check_win(spin)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
