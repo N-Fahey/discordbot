@@ -36,18 +36,22 @@ class Slots_View(ui.View):
     @ui.button(label='1',emoji='1️⃣', style=ButtonStyle.blurple,custom_id='1')
     async def bet_1(self, interaction:Interaction, button:ui.Button):
         self.bot.dispatch("slots_reaction",interaction.user,1)
+        await interaction.response.defer()
     
     @ui.button(label='2',emoji='2️⃣', style=ButtonStyle.blurple,custom_id='2')
     async def bet_2(self, interaction:Interaction, button:ui.Button):
         self.bot.dispatch("slots_reaction",interaction.user,2)
+        await interaction.response.defer()
     
     @ui.button(label='3',emoji='3️⃣', style=ButtonStyle.blurple,custom_id='3')
     async def bet_3(self, interaction:Interaction, button:ui.Button):
         self.bot.dispatch("slots_reaction",interaction.user,3)
+        await interaction.response.defer()
     
     @ui.button(label='All in',emoji='🤑', style=ButtonStyle.danger,custom_id='all_in')
     async def allin(self, interaction:Interaction, button:ui.Button):
         self.bot.dispatch("slots_reaction",interaction.user,0)
+        await interaction.response.defer()
         #confirm_view = Slots_Confirm_View(self.bot,self.lobby)
         #await interaction.response.send_message(f"Are you sure you want to go all in? This will bet your entire pot ({self.bot.currencyCode}{self.lobby.game.pot})\nDismiss this message to back out like a tiny little baby. waa waaa waaaaa.\nOh, you didn't mean to press the button? What are you going to do? Cry??? Like a baby??",view=confirm_view,ephemeral=True)
     
@@ -86,7 +90,7 @@ class Slots:
         self.spins = 0
         self.won = 0
         self.max_pot = 0 #Only used for testing
-        self.wins = 0 #Only used for testing        
+        self.wins = 0 #Only used for testing
         self.big_wins = 0 #Only used for testing
         self.jackpots = 0 #Only used for testing
     
@@ -95,42 +99,25 @@ class Slots:
             raise ValueError("Player doesn't match.")
         
         if self.pot <= 0:
-            return "Out of money"
+            raise ValueError("Tried to play Slots without any money")
         
         if self.bet_options[bet_index] > self.pot:
-            return "Not enough for that bet"
+            raise ValueError("Tried to place Slots bet without enough money")
 
         self.spins += 1
         spin = self.get_spin()
-        result_multiple = self.check_win(spin)
+        spin = (4,4,4)
+        result_multiple, outcome = self.check_win(spin)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
 
-        if result_multiple is not None:
-            winnings = int(result_multiple * this_bet)
-            if winnings == 0:
-                winnings = 1
+        winnings = int(result_multiple * this_bet) if result_multiple is not None else 0
+        if winnings:
             self.won += winnings
             self.pot += winnings
-            if self.pot > self.max_pot:
-                self.max_pot = self.pot
-            
-            if 2 in spin and 3 in spin and 4 in spin:
-                outcome = "A Gaggle of Gamer Girls"
-            elif 4 in spin and 5 in spin and 6 in spin:
-                outcome = "The FG Three"
-            elif spin == (1,1,1):
-                outcome = "CJ's Jackpot"
-            elif spin[0] == spin[1] == spin[2]:
-                outcome = "a triple"
-            else:
-                outcome = "two of a kind"
+            self.max_pot = max(self.pot, self.max_pot)
 
-            self.update_bet_options()
-        else:
-            winnings = 0
-            outcome = ""
-            self.update_bet_options()
+        self.update_bet_options()
 
         return {
             "spin":spin,
@@ -160,38 +147,32 @@ class Slots:
         else:
             self.bet_options = [self.pot,50,75,100]
 
-    def check_win(self,spin:list):
-        big_win_options = { #key: spin, value: payout multiple
+    def check_win(self,spin:tuple):
+        spin_sorted = tuple(sorted(spin))
+        big_win_options = { #key: spin, value: multiple, outcome text
             #Gamer girls
-            (2,3,4):5,
-            (2,4,3):5,
-            (3,2,4):5,
-            (3,4,2):5,
-            (4,2,3):5,
-            (4,3,2):5,
+            (2,3,4):(10, "A Gaggle of Gamer Girls"),
             #The FG Three
-            (4,5,6):5,
-            (4,6,5):5,
-            (5,4,6):5,
-            (5,6,4):5,
-            (6,4,5):5,
-            (6,5,4):5,
+            (4,5,6):(10, "The FG Three"),
             #CJ's Jackpot
-            (1,1,1):50,
+            (1,1,1):(50, "CJ's Jackpot"),
         }
-        for i in range(2,9):
-            #Any other 3 match
-            big_win_options[(i,i,i)] = 3
 
-        if spin in big_win_options:
+        if spin_sorted in big_win_options:
             self.big_wins += 1
-            return big_win_options[spin]
-        else:
-            for i in spin:
-                if spin.count(i) > 1:
-                    self.wins += 1
-                    return 2
-            return None
+            return big_win_options[spin_sorted]
+
+        #Any triple
+        if len(set(spin_sorted)) == 1:
+            # Multiplier = 6x
+            return (6, "a triple")
+        
+        # Any double
+        if len(set(spin_sorted)) == 2:
+            return (2, "two of a kind")
+        
+        #No win
+        return (None, "")
 
 #########################
 #       Extension       #
