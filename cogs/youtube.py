@@ -12,7 +12,6 @@ from pathlib import Path
 
 class DashcamFile():
     def __init__(self, filepath):
-        self._filepath_string = filepath
         self._path = Path(filepath)
 
         #Create file if doesnt exist
@@ -25,7 +24,7 @@ class DashcamFile():
                     'compilation': ''
                 }
             #Create json file
-            with open(self._filepath_string, 'w') as dc_file:                
+            with self._path.open('w') as dc_file:                
                 json.dump(dc_dict, dc_file, indent=4)                
                 print('Youtube: Created dashcam file')
         
@@ -33,7 +32,7 @@ class DashcamFile():
         self._json = self._read_file()
 
     def _read_file(self):
-        with open(self._filepath_string) as dc_file:
+        with self._path.open('r') as dc_file:
             dc_json = json.load(dc_file)
             return dc_json
     
@@ -53,7 +52,7 @@ class DashcamFile():
 
         #Update attribute & save file
         self._json = new_json
-        with open(self._filepath_string, 'w') as dc_file:
+        with self._path.open('w') as dc_file:
             json.dump(self._json, dc_file, indent=4)
 
 #########################
