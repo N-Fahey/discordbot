@@ -29,6 +29,7 @@ class RatRace:
     def play(self):
         while True:
             self.do_turn()
+            print(self)
             winners = self.check_for_winners()
 
             if winners:
@@ -41,7 +42,7 @@ class RatRace:
                 self.board[index] = [rat, position + rat.positions_per_move]
 
     def check_for_winners(self):
-        return [index for index, lane_status in enumerate(self.board) if lane_status[1] >= self.lane_length]
+        return [index for index, (rat, position) in enumerate(self.board) if position >= self.lane_length]
 
     def construct_lane_str(self, rat, lane_pos):
         lane_str = "-" * self.lane_length
@@ -54,4 +55,3 @@ class RatRace:
             res += self.construct_lane_str(rat, lane_pos)
             res += "\n"
         return res
-
