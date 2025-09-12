@@ -69,6 +69,7 @@ async def on_ready():
 @self.event
 async def on_reload(ctx):
     if self.console_listener is not None:
+        self.console_listener.cancel()
         self.console_listener = None
 
     self.loaded_cogs = list(self.extensions)
