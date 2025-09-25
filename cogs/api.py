@@ -115,7 +115,6 @@ class APIWrapper:
         return await self._post('bank/update_dole', data=json)
     
     async def try_dole(self, uid:int, dole_amount:int, dole_limit:int):
-        # Check balance < limit
         res = await self.get_balance(uid)
         if res['json']['balance'] >= dole_limit:
             return {
@@ -233,7 +232,14 @@ class APIWrapper:
 
         return await self._post('users/create_user', data=json)
     
-    #TODO: Update user
+    async def update_user(self, uid:int, username:str | None = None, display_name:str | None = None):
+        json = {
+            'uid': uid,
+            'username': username,
+            'display_name': display_name
+        }
+
+        return await self._post('users/update_user', data=json) 
 
 
 #########################

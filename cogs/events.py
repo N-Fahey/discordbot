@@ -70,22 +70,22 @@ class events(commands.Cog):
                 raise RuntimeError(f"Error adding user (on_member_join): {member.name}, uid: {member.id}")
 
     #Update member info, just use AddMember as it handles duplicates fine. This just updates display_name
-    #TODO: Update for API
     @commands.Cog.listener()
     async def on_member_update(self,before,after):
         if before.bot:
             return
         if before.display_name != after.display_name:
-            self.bot.dispatch("queryAddMember",after.id,after.name,after.display_name)
+            async with self.bot.api as api:
+                await api.update_user(after.id, display_name=after.display_name)
 
     #Update user info, same as above but will also see changes to username
-    #TODO: Update for API
     @commands.Cog.listener()
     async def on_user_update(self,before,after):
         if before.bot:
             return
         if before.name != after.name:
-            self.bot.dispatch("queryAddMember",after.id,after.name,after.display_name)
+            async with self.bot.api as api:
+                await api.update_user(after.id, username=after.name)
     
     #Fishy Reaction Matching
     @commands.Cog.listener()
