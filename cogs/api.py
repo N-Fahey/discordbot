@@ -1,6 +1,7 @@
 import aiohttp
 import os
 
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from discord.ext import commands
 
@@ -28,7 +29,7 @@ class APIWrapper:
         async with self.session.get(url=endpoint, params=params) as resp:
             if not resp.ok:
                 #TODO: Error handling
-                print('Error: ', resp.status) #temp
+                print(f'API error: GET {endpoint} {resp.status}. Params: {params}')
 
             json = await resp.json()
 
@@ -41,7 +42,7 @@ class APIWrapper:
         async with self.session.post(url=endpoint, json=data) as resp:
             if not resp.ok:
                 #TODO: Error handling
-                print('Error: ', resp.status) #temp
+                print(f'API Error: POST {endpoint} {resp.status}. Data: {data}')
             
             json = await resp.json()
             
@@ -61,7 +62,7 @@ class APIWrapper:
 
         return await self._get('ai/messages/get_conversation', params=params)
 
-    async def ai_add_message(self, uid:int, conversation_id:int, message_id:int, msg:str):
+    async def ai_add_message(self, uid:int | None, conversation_id:int, message_id:int, msg:str):
         json = {
             'uid': uid,
             'conversation_id': conversation_id,
@@ -99,22 +100,56 @@ class APIWrapper:
 
         return await self._get('bank/get_balances', params=params)
     
-    async def get_dole(self, uid:int):
+    async def _get_dole_timestamp(self, uid:int):
         params = {
             'user_id': uid
         }
 
         return await self._get('bank/get_dole', params=params)
     
+    async def _update_dole_timestamp(self, uid:int):
+        json = {
+            'user_id': uid
+        }
+        #TODO: Add this endpoint
+        return await self._post('bank/update_dole', data=json)
+    
+    async def try_dole(self, uid:int, dole_amount:int, dole_limit:int):
+        # Check balance < limit
+        res = await self.get_balance(uid)
+        if res['json']['balance'] >= dole_limit:
+            return {
+                'success': False,
+                'reason': 'balance'
+            }
+        
+        res = await self._get_dole_timestamp(uid)
+        last_dole = datetime.strptime(res['json']['last_dole'], '%Y-%m-%dT%H:%M:%S')
+
+        if datetime.now().date() - last_dole.date() < timedelta(days=1):
+            return {
+                'success': False,
+                'reason': 'time',
+                'delta': datetime.now() - last_dole
+            }
+        
+        result = await self.bank_deposit(uid, dole_amount)
+        await self._update_dole_timestamp(uid)
+
+        return {
+            'success': True,
+            'balance': result['json']['balance']
+        }
+
     async def bank_deposit(self, uid:int, amount:int):
-        params = {
+        json = {
             'uid': uid,
             'amount': amount
         }
         
-        return await self._get('bank/deposit', params=params)
+        return await self._post('bank/deposit', data=json)
     
-    async def bank_withdraw(self, uid:int, amount:int):
+    async def _bank_withdraw(self, uid:int, amount:int):
         params = {
             'uid': uid,
             'amount': amount
@@ -122,7 +157,18 @@ class APIWrapper:
         
         return await self._get('bank/withdraw', params=params)
 
+    async def try_withdraw(self, uid:int, amount:int):
+        res = await self.get_balance(uid)
+        balance = res['balance']
+
+        if balance < amount:
+            return False
+        
+        await self._bank_withdraw(uid, amount)
+        return True
+
     async def bank_transfer(self, from_uid:int, to_uid:int, amount:int):
+        #TODO: Check if needed - currently unused (see try_transfer)
         params = {
             'from_uid': from_uid,
             'to_uid': to_uid,
@@ -131,6 +177,13 @@ class APIWrapper:
         
         return await self._get('bank/transfer', params=params)
     
+    async def try_transfer(self, from_uid:int, to_uid:int, amount:int):
+        withdraw_result = await self.try_withdraw(from_uid, amount)
+        if not withdraw_result:
+            return False
+        
+        await self.bank_deposit(to_uid, amount)
+        return True
 
     #########################
     #          Games        #

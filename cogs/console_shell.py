@@ -150,17 +150,20 @@ class CmdShell(cmd.Cmd):
         arg_list = args.split(' ')
         
         if len(arg_list) == 1 and arg_list[0] in options:
-            sql_cog = self.bot.get_cog('sql')
 
             if arg_list[0] == 'bank':
-                res = await sql_cog.queryAllBanks()
+                async with self.bot.api as api:
+                    res = await api.get_balances(0)
+                
+                balances = res['json']['balances']
+
                 self.bank = []
-                for member in res:
-                    member_object = self.bot.guild.get_member(member)
+                for balance in balances:
+                    member_object = self.bot.guild.get_member(balance['uid'])
                     if member_object is not None:
                         self.bank.append({
-                            'member':member_object,
-                            'bank':res[member]
+                            'member': member_object,
+                            'bank': balance['balance']
                             })
 
                 print('id'.ljust(2),'Name'.ljust(15),'Bank')
@@ -184,16 +187,21 @@ class CmdShell(cmd.Cmd):
 
             sql_cog = self.bot.get_cog('sql')
             if 0 <= arg_list[1] < len(self.bank):
-                if arg_list[0] == 'pay':                    
-                    if await sql_cog.queryPay(self.bank[arg_list[1]]['member'].id,arg_list[2]):
-                        print(f"Successfully paid {arg_list[2]} to user {self.bank[arg_list[1]]['member'].name}.")
-                    else:
-                        print("Failed to pay user")                    
+                if arg_list[0] == 'pay':
+                    async with self.bot.api as api:
+                        res = api.bank_deposit(self.bank[arg_list[1]]['member'].id,arg_list[2])
+
+                    print(f"Successfully paid {arg_list[2]} to user {self.bank[arg_list[1]]['member'].name}.")
+                 
                 elif arg_list[0] == 'withdraw':
-                    if await sql_cog.queryWithdraw(self.bank[arg_list[1]]['member'].id,arg_list[2]):
-                        print(f"Successfully withdrew {arg_list[2]} from user {self.bank[arg_list[1]]['member'].name}.")
-                    else:
-                        print(f"Error withdrawing {arg_list[2]} from user {self.bank[arg_list[1]]['member'].name}. Is there enough in their bank?")
+                    async with self.bot.api as api:
+                        result = await api.try_withdraw(self.bank[arg_list[1]]['member'].id, arg_list[2])
+
+                    if not result:
+                        print(f"Can't withdraw {arg_list[2]} from user {self.bank[arg_list[1]]['member'].name}. Balance too low")
+                        return
+
+                    print(f"Successfully withdrew {arg_list[2]} from user {self.bank[arg_list[1]]['member'].name}.")
             else:
                 print("Unrecognised index. Run currency bank & then currency [pay/withdraw] [id] [amount].")
         else:

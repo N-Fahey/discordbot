@@ -64,22 +64,23 @@ class ai_responses(commands.Cog):
             #Check if message is a response & create conversation
             ai_messages= [{"role":"system", "content":self.bot.ai_sysprompt}]
             if is_reply:
-                sql_cog = self.bot.get_cog('sql')
-                resp = await sql_cog.queryAIMessages(message_id = message.reference.message_id)
-                msglog = resp['log']
-                base_message_id = resp['base_message_id']
+                async with self.bot.api as api:
+                    res = await api.get_conversation(message.reference.message_id)
+                
+                conversation = res['json']['conversation']
+                conversation_id = conversation[0]['conversation_id']
 
-                for line in msglog:
+                for line in conversation:
                     ai_messages.append({
-                        'role':line['role'],
+                        'role':'assistant' if not line['user_id'] else 'user',
                         'content':line['text']
                     })
 
             else:
-                base_message_id = message.id
+                conversation_id = message.id
             
             ai_messages.append({"role":"user", "content":prompt})
-
+            print(ai_messages)
             #Create the response
             response = openai.chat.completions.create(
                 model=model,
@@ -93,13 +94,15 @@ class ai_responses(commands.Cog):
             self.bot.dispatch('log',
             f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response.usage.prompt_tokens}, {response.usage.completion_tokens}, {response.usage.total_tokens}")
 
-            self.bot.dispatch('queryAILog', user_id = message.author.id, ai_type = 'text', tokens = response.usage.total_tokens)
-            self.bot.dispatch('queryAIMessageAdd', base_message_id=base_message_id, message_id=message.id, user_id=message.author.id, role='user', message_text=prompt)
+            async with self.bot.api as api:
+                usage_res = await api.ai_add_usage(message.author.id, 'text', response.usage.total_tokens)
+                msg_res = await api.ai_add_message(message.author.id, conversation_id, message.id, prompt)
 
         #Stop typing, and send reply 
         reply_message = await message.reply(response_text)
         #Add the bot reply to the log
-        self.bot.dispatch('queryAIMessageAdd', base_message_id = base_message_id, message_id=reply_message.id, user_id=self.bot.user.id, role='assistant', message_text=response_text)
+        async with self.bot.api as api:
+            msg_res = await api.ai_add_message(None, conversation_id, reply_message.id, response_text)
 
     #Image generation
     @commands.Cog.listener()
@@ -123,7 +126,8 @@ class ai_responses(commands.Cog):
         self.bot.dispatch('log',
         f"OpenAI: {message.author} used the AI to generate an image. Prompt: '{prompt}', Image url: '{image_url}'")
         #1 image cost = $0.04, same as 2500 response tokens
-        self.bot.dispatch('queryAILog', user_id = message.author.id, ai_type = 'image', tokens = 2500)
+        async with self.bot.api as api:
+            res = await api.api_add_usage(message.author.id, 'image', 2500)
 
         await message.reply(image_url)
         
