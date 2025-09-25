@@ -57,7 +57,7 @@ class admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def populatedb(self,ctx):
         try:
-            self.bot.dispatch("populatedb")
+            self.bot.dispatch("populate_db")
         except:
             await ctx.send("Error populating db")  
 

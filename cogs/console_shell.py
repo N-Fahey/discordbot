@@ -132,7 +132,7 @@ class CmdShell(cmd.Cmd):
                 self.bot.dispatch("reload",None)
                 print("Reloading extensions...")
             elif args_list[0] == 'populatedb':
-                self.bot.dispatch("populatedb")
+                self.bot.dispatch("populate_db")
                 print("DB populating...")
             else:
                 raise RuntimeError("Something went fucky")

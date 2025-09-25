@@ -83,13 +83,6 @@ class sql(commands.Cog):
             raise
 
 
-    @commands.Cog.listener()
-    async def on_populatedb(self):
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                if not member.bot:
-                    await self.on_queryAddMember(member.id, member.name, member.display_name)
-
 
     #Add win to winners table
     @commands.Cog.listener()
