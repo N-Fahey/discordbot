@@ -52,6 +52,7 @@ async def on_ready():
     self.emojiDict = {e.name:str(e) for e in self.emojis}
 
     #Load settings
+    #TODO: update settings logic - can just be a function here
     sqlCog = self.get_cog('sql')
     settings = await sqlCog.queryRetrieveSettings()
     self.dispatch('populate_db')

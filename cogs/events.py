@@ -62,9 +62,15 @@ class events(commands.Cog):
     async def on_member_join(self,member):
         if member.bot:
             return
-        self.bot.dispatch("queryAddMember",member.id,member.name,member.display_name)
+        
+        async with self.bot.api as api:
+            res = await api.add_user(member.id, member.name, member.display_name)
+
+            if not res['success']:
+                raise RuntimeError(f"Error adding user (on_member_join): {member.name}, uid: {member.id}")
 
     #Update member info, just use AddMember as it handles duplicates fine. This just updates display_name
+    #TODO: Update for API
     @commands.Cog.listener()
     async def on_member_update(self,before,after):
         if before.bot:
@@ -73,6 +79,7 @@ class events(commands.Cog):
             self.bot.dispatch("queryAddMember",after.id,after.name,after.display_name)
 
     #Update user info, same as above but will also see changes to username
+    #TODO: Update for API
     @commands.Cog.listener()
     async def on_user_update(self,before,after):
         if before.bot:
