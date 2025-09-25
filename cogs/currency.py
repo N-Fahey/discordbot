@@ -61,7 +61,7 @@ class currency(commands.Cog):
         async with self.bot.api as api:
             res = await api.get_balance(ctx.author.id)
         
-        balance = res['balance']
+        balance = res['json']['balance']
         
         await ctx.send(f"`{ctx.author.display_name}`, your balance is {self.bot.currencyCode}{balance}")
     

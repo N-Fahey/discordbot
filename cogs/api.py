@@ -276,14 +276,6 @@ class api(commands.Cog):
                     self.bot.dispatch('log', f'api: Created user {member.name}')
                     
 
-    @commands.command(name="testapi")
-    async def test(self, ctx):
-        self.bot.dispatch('populate_db')
-        # async with self.bot.api as api:
-        #     res = await api.add_user(ctx.author.id, ctx.author.name, ctx.author.display_name)
-        
-        # print(res)
-
 #########################
 #      FINAL SETUP      #
 #########################
