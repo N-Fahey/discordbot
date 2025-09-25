@@ -69,8 +69,9 @@ async def on_ready():
         raise ValueError(f"Failed to load settings: {settings}")
 
     self.guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
-    self.dispatch("log",f"{self.user} now ready on guild: {self.guild.name}, guild ID: {self.guild.id}")
     self.dispatch('populate_db')
+    
+    self.dispatch("log",f"{self.user} now ready on guild: {self.guild.name}, guild ID: {self.guild.id}")
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
 @self.event

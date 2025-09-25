@@ -253,20 +253,21 @@ class api(commands.Cog):
 
     @commands.Cog.listener()
     async def on_populate_db(self):
-        #TODO: Add updating user logic
         async with self.bot.api as api:
             res = await api.get_all_users()
 
             if not res['success']:
                 raise RuntimeError("Error retrieving users (on_populate_db)")
             
-            db_users = res['json']['users']
-            db_uids = {user['uid'] for user in db_users}
+            all_users = res['json']['users']
+            db_uids = {user['uid'] for user in all_users}
+            dict_users = {user['uid']: user for user in all_users}
 
             for member in self.bot.guild.members:
                 if member.bot:
                     continue
-
+                
+                #Create new
                 if member.id not in db_uids:
                     res = await api.add_user(member.id, member.name, member.display_name)
 
@@ -274,7 +275,16 @@ class api(commands.Cog):
                         raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
                     
                     self.bot.dispatch('log', f'api: Created user {member.name}')
+                
+                #Update
+                if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
+                    res = await api.update_user(member.id, member.name, member.display_name)
+
+                    if not res['success']:
+                        raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
                     
+                    self.bot.dispatch('log', f'api: Updated user {member.name}')
+
 
 #########################
 #      FINAL SETUP      #
