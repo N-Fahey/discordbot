@@ -28,8 +28,7 @@ class APIWrapper:
     async def _get(self, endpoint:str, params:dict | None = None) -> dict:
         async with self.session.get(url=endpoint, params=params) as resp:
             if not resp.ok:
-                #TODO: Error handling
-                print(f'API error: GET {endpoint} {resp.status}. Params: {params}')
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ERROR api: GET {endpoint} {resp.status}. Params: {params}")
 
             json = await resp.json()
 
@@ -41,8 +40,7 @@ class APIWrapper:
     async def _post(self, endpoint:str, data:dict | None = None) -> dict:
         async with self.session.post(url=endpoint, json=data) as resp:
             if not resp.ok:
-                #TODO: Error handling
-                print(f'API Error: POST {endpoint} {resp.status}. Data: {data}')
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ERROR api: POST {endpoint} {resp.status}. Data: {data}")
             
             json = await resp.json()
             

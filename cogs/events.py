@@ -178,19 +178,9 @@ class events(commands.Cog):
     #Logging
     @commands.Cog.listener()
     async def on_log(self,msg):
-        print(f"{datetime.datetime.now()} - {msg}")
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} INFO {msg}")
         with open("general.log","a", encoding="utf-8") as logfile:
             logfile.write(f"{datetime.datetime.now()} - {msg}\n")
-
-    #Error handling
-    @commands.Cog.listener()
-    async def on_error(self, event, *args, **kwargs):
-        with open("error.log","a") as logfile:
-            if event == "on_message":
-                logfile.write(f"{datetime.datetime.now()} - Event: on_message - {args[0]}\n")
-                raise
-            else:
-                raise
     
     @commands.Cog.listener()
     async def on_vc_disconnect(self):
