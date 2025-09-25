@@ -46,7 +46,6 @@ class BotAIMessageLog(Base):
     role = Column('role', String(20))
     message_text = Column('message_text', String(2000))
 
-Base.metadata.create_all(engine)
 
 
 #########################
@@ -82,14 +81,6 @@ class sql(commands.Cog):
 
         except:
             raise
-
-    #Load settings. Return settings values, and games list
-    #TODO: Move this out to main file (and clean up main file?)
-    async def queryRetrieveSettings(self): #No need to pass any data here
-
-        with open("settings.yaml", "r") as f:
-            data = yaml.safe_load(f)
-            return data
 
 
 #########################
