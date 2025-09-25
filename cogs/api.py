@@ -1,8 +1,6 @@
 import aiohttp
 import os
-import time
 
-from typing import Annotated
 from dotenv import load_dotenv
 from discord.ext import commands
 
@@ -194,13 +192,38 @@ class api(commands.Cog):
         self.bot = bot
         self.bot.api = APIWrapper()
 
+    @commands.Cog.listener()
+    async def on_populate_db(self):
+        #TODO: Add updating user logic
+        async with self.bot.api as api:
+            res = await api.get_all_users()
+
+            if not res['success']:
+                raise RuntimeError("Error retrieving users (on_populate_db)")
+            
+            db_users = res['json']['users']
+            db_uids = {user['uid'] for user in db_users}
+
+            for member in self.bot.guild.members:
+                if member.bot:
+                    continue
+
+                if member.id not in db_uids:
+                    res = await api.add_user(member.id, member.name, member.display_name)
+
+                    if not res['success']:
+                        raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
+                    
+                    self.bot.dispatch('log', f'api: Created user {member.name}')
+                    
+
     @commands.command(name="testapi")
     async def test(self, ctx):
+        self.bot.dispatch('populate_db')
+        # async with self.bot.api as api:
+        #     res = await api.add_user(ctx.author.id, ctx.author.name, ctx.author.display_name)
         
-        async with self.bot.api as api:
-            res = await api.add_user(ctx.author.id, ctx.author.name, ctx.author.display_name)
-        
-        print(res)
+        # print(res)
 
 #########################
 #      FINAL SETUP      #
