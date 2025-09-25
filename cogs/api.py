@@ -109,9 +109,8 @@ class APIWrapper:
     
     async def _update_dole_timestamp(self, uid:int):
         json = {
-            'user_id': uid
+            'uid': uid
         }
-        #TODO: Add this endpoint
         return await self._post('bank/update_dole', data=json)
     
     async def try_dole(self, uid:int, dole_amount:int, dole_limit:int):
@@ -165,16 +164,6 @@ class APIWrapper:
         
         await self._bank_withdraw(uid, amount)
         return True
-
-    async def bank_transfer(self, from_uid:int, to_uid:int, amount:int):
-        #TODO: Check if needed - currently unused (see try_transfer)
-        params = {
-            'from_uid': from_uid,
-            'to_uid': to_uid,
-            'amount': amount
-        }
-        
-        return await self._get('bank/transfer', params=params)
     
     async def try_transfer(self, from_uid:int, to_uid:int, amount:int):
         withdraw_result = await self.try_withdraw(from_uid, amount)
