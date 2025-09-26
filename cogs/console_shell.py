@@ -152,7 +152,7 @@ class CmdShell(cmd.Cmd):
         if len(arg_list) == 1 and arg_list[0] in options:
 
             if arg_list[0] == 'bank':
-                await self.bot.api.get_balances(0)
+                res = await self.bot.api.get_balances(0)
                 
                 balances = res['json']['balances']
 
@@ -184,7 +184,6 @@ class CmdShell(cmd.Cmd):
                 print('Run bank first to get list of members')
                 return
 
-            sql_cog = self.bot.get_cog('sql')
             if 0 <= arg_list[1] < len(self.bank):
                 if arg_list[0] == 'pay':
                     res = await self.bot.api.bank_deposit(self.bank[arg_list[1]]['member'].id,arg_list[2])

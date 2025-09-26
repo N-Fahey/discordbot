@@ -124,7 +124,7 @@ class ai_responses(commands.Cog):
         f"OpenAI: {message.author} used the AI to generate an image. Prompt: '{prompt}', Image url: '{image_url}'")
         #1 image cost = $0.04, same as 2500 response tokens
 
-        await self.bot.api.api_add_usage(message.author.id, 'image', 2500)
+        await self.bot.api.ai_add_usage(message.author.id, 'image', 2500)
 
         await message.reply(image_url)
         
