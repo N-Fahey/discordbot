@@ -22,8 +22,7 @@ class currency(commands.Cog):
             await ctx.send("No dole while you're in a lobby ya rat dog.")
             return
 
-        async with self.bot.api as api:
-            result = await api.try_dole(ctx.author.id, self.bot.dolePayment, self.bot.doleLimit)
+        result = await self.bot.api.try_dole(ctx.author.id, self.bot.dolePayment, self.bot.doleLimit)
         
         if result['success']:
             await ctx.send(f"Your handout has been processed. Balance is now {self.bot.currencyCode}{result['balance']}.")
@@ -43,8 +42,7 @@ class currency(commands.Cog):
     @commands.command(name="transfer",help="Usage: !transfer {@user} {amount}. Transfer money to the specified user.")
     async def transfer(self,ctx,target:Member = None,amount:int = 0):
         if target is not None and amount > 0:
-            async with self.bot.api as api:
-                result = await api.try_transfer(ctx.author.id, target.id, amount)
+            result = await self.bot.api.try_transfer(ctx.author.id, target.id, amount)
             
             if not result:
                 await ctx.send("You don't have enough money to do that!")
@@ -58,8 +56,7 @@ class currency(commands.Cog):
     #Check balance
     @commands.command(name="balance",help="Check your bank balance!")
     async def balance(self,ctx):
-        async with self.bot.api as api:
-            res = await api.get_balance(ctx.author.id)
+        res = await self.bot.api.get_balance(ctx.author.id)
         
         balance = res['json']['balance']
         
@@ -68,8 +65,7 @@ class currency(commands.Cog):
     #Top10
     @commands.command(name="top10", help="View the top 10 currency holders on the server.")
     async def test(self,ctx):
-        async with self.bot.api as api:
-            res = await api.get_balances(count=10)
+        res = await self.bot.api.get_balances(count=10)
         
         top10_balances = [str(bal['balance']) for bal in res['json']['balances']]
         top10_names = [bal['display_name'] for bal in res['json']['balances']]

@@ -73,30 +73,26 @@ class lobby(commands.Cog):
                 #Return the pot if there is no winner
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner. Returning bets."
                 for member,pot_amount in lobby.pot.items():
-                    async with self.bot.api as api:
-                        res = await api.bank_deposit(member.id, pot_amount)
+                    res = await self.bot.api.bank_deposit(member.id, pot_amount)
             else:
                 #Otherwise - pay full pot to the winner & log win in db
                 pot = sum(lobby.pot.values())
-                async with self.bot.api as api:
-                    res = await api.bank_deposit(winner.id, pot)
+                res = await self.bot.api.bank_deposit(winner.id, pot)
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
 
-                async with self.bot.api as api:
-                    res = await api.add_score(winner.id, lobby.game_type, pot)
+                res = await self.bot.api.add_score(winner.id, lobby.game_type, pot)
 
-                    if not res['success']:
-                        raise RuntimeError(f'Error adding win for game {lobby.game_type}, winner {winner.name}. Pot {pot}')
+                if not res['success']:
+                    raise RuntimeError(f'Error adding win for game {lobby.game_type}, winner {winner.name}. Pot {pot}')
 
         else: #Betting disabled lobby. Still log to db if there's a winner
             if winner is not None:
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing with winner: {winner.name}"
 
-                async with self.bot.api as api:
-                    res = await api.add_score(winner.id, lobby.game_type, pot)
+                res = await self.bot.api.add_score(winner.id, lobby.game_type, pot)
 
-                    if not res['success']:
-                        raise RuntimeError(f'Error adding win for game {lobby.game_type}, winner {winner.name}. Pot {pot}')
+                if not res['success']:
+                    raise RuntimeError(f'Error adding win for game {lobby.game_type}, winner {winner.name}. Pot {pot}')
  
             else:
                 log_msg = f"lobby: {lobby.lobby_owner.name}'s {lobby.game_type} lobby closing without winner."
@@ -189,8 +185,7 @@ class lobby(commands.Cog):
                 await lobby_to_join.message.edit(embed=self.get_lobby_embed_message(lobby_to_join)) 
             else:
                 if bet >= lobby_to_join.pot[lobby_to_join.lobby_owner]:
-                    async with self.bot.api as api:
-                        result = await api.try_withdraw(ctx.author.id, bet)
+                    result = await self.bot.api.try_withdraw(ctx.author.id, bet)
 
                     if not result:
                         self.bot.dispatch("sendReply",ctx,"You don't have enough money to do that!")
@@ -233,8 +228,7 @@ class lobby(commands.Cog):
         match = [i for i in self.bot.prettyGames if game in i]
         if len(match) == 1:
             if bet > 0:                
-                async with self.bot.api as api:
-                    result = await api.try_withdraw(ctx.author.id, bet)
+                result = await self.bot.api.try_withdraw(ctx.author.id, bet)
                 
                 if not result:
                     self.bot.dispatch("sendReply",ctx,"You don't have enough money to do that!")
@@ -320,8 +314,7 @@ class lobby(commands.Cog):
             return
         
         if member_lobby.pot is not None:
-            async with self.bot.api as api:
-                res = await api.bank_deposit(ctx.author.id,member_lobby.pot.pop(ctx.author))
+            await self.bot.api.bank_deposit(ctx.author.id,member_lobby.pot.pop(ctx.author))
 
         member_lobby.lobby_players.remove(ctx.author)  
         self.bot.dispatch("log",f"lobby: {ctx.author} left {member_lobby.game_type} lobby")

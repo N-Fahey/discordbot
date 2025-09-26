@@ -64,8 +64,7 @@ class ai_responses(commands.Cog):
             #Check if message is a response & create conversation
             ai_messages= [{"role":"system", "content":self.bot.ai_sysprompt}]
             if is_reply:
-                async with self.bot.api as api:
-                    res = await api.get_conversation(message.reference.message_id)
+                res = await self.bot.api.get_conversation(message.reference.message_id)
                 
                 conversation = res['json']['conversation']
                 conversation_id = conversation[0]['conversation_id']
@@ -94,15 +93,13 @@ class ai_responses(commands.Cog):
             self.bot.dispatch('log',
             f"OpenAI: {message.author} used the AI. Sent prompt: '{prompt}', Response: '{response_text}, Usage(promt,reply,total): {response.usage.prompt_tokens}, {response.usage.completion_tokens}, {response.usage.total_tokens}")
 
-            async with self.bot.api as api:
-                usage_res = await api.ai_add_usage(message.author.id, 'text', response.usage.total_tokens)
-                msg_res = await api.ai_add_message(message.author.id, conversation_id, message.id, prompt)
+            await self.bot.api.ai_add_usage(message.author.id, 'text', response.usage.total_tokens)
+            await self.bot.api.ai_add_message(message.author.id, conversation_id, message.id, prompt)
 
         #Stop typing, and send reply 
         reply_message = await message.reply(response_text)
         #Add the bot reply to the log
-        async with self.bot.api as api:
-            msg_res = await api.ai_add_message(None, conversation_id, reply_message.id, response_text)
+        await self.bot.api.ai_add_message(None, conversation_id, reply_message.id, response_text)
 
     #Image generation
     @commands.Cog.listener()
@@ -126,8 +123,8 @@ class ai_responses(commands.Cog):
         self.bot.dispatch('log',
         f"OpenAI: {message.author} used the AI to generate an image. Prompt: '{prompt}', Image url: '{image_url}'")
         #1 image cost = $0.04, same as 2500 response tokens
-        async with self.bot.api as api:
-            res = await api.api_add_usage(message.author.id, 'image', 2500)
+
+        await self.bot.api.api_add_usage(message.author.id, 'image', 2500)
 
         await message.reply(image_url)
         

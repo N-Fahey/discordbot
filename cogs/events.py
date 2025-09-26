@@ -63,11 +63,10 @@ class events(commands.Cog):
         if member.bot:
             return
         
-        async with self.bot.api as api:
-            res = await api.add_user(member.id, member.name, member.display_name)
+        res = await self.bot.api.add_user(member.id, member.name, member.display_name)
 
-            if not res['success']:
-                raise RuntimeError(f"Error adding user (on_member_join): {member.name}, uid: {member.id}")
+        if not res['success']:
+            raise RuntimeError(f"Error adding user (on_member_join): {member.name}, uid: {member.id}")
 
     #Update member info, just use AddMember as it handles duplicates fine. This just updates display_name
     @commands.Cog.listener()
@@ -75,8 +74,7 @@ class events(commands.Cog):
         if before.bot:
             return
         if before.display_name != after.display_name:
-            async with self.bot.api as api:
-                await api.update_user(after.id, display_name=after.display_name)
+            await self.bot.api.update_user(after.id, display_name=after.display_name)
 
     #Update user info, same as above but will also see changes to username
     @commands.Cog.listener()
@@ -84,8 +82,7 @@ class events(commands.Cog):
         if before.bot:
             return
         if before.name != after.name:
-            async with self.bot.api as api:
-                await api.update_user(after.id, username=after.name)
+            await self.bot.api.update_user(after.id, username=after.name)
     
     #Fishy Reaction Matching
     @commands.Cog.listener()

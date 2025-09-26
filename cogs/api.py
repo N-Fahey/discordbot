@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from discord.ext import commands
+from time import perf_counter
 
 #########################
 #        Wrapper        #
@@ -18,12 +19,13 @@ class APIWrapper:
         }
         self.session = None
 
-    async def __aenter__(self):
-        self.session = aiohttp.ClientSession(base_url=self._base_url, headers=self.__headers)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.close()
+    async def setup(self):
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession(base_url=self._base_url, headers=self.__headers)
+    
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
 
     async def _get(self, endpoint:str, params:dict | None = None) -> dict:
         async with self.session.get(url=endpoint, params=params) as resp:
@@ -31,7 +33,7 @@ class APIWrapper:
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ERROR api: GET {endpoint} {resp.status}. Params: {params}")
 
             json = await resp.json()
-
+            
             return {
                 'success': resp.ok,
                 'json': json
@@ -175,6 +177,10 @@ class APIWrapper:
     #          Games        #
     #########################
 
+    async def get_games(self):
+
+        return await self._get('games/get_games')
+
     async def add_game(self, game_name:str):
         json = {
             'game_name': game_name
@@ -238,39 +244,62 @@ class api(commands.Cog):
         self.bot = bot
         self.bot.api = APIWrapper()
 
+    async def cog_load(self):
+        await self.bot.api.setup()
+
+    async def cog_unload(self):
+        await self.bot.api.close()
+    
+    #########################
+    #    Event Listeners    #
+    #########################
+    
+    @commands.Cog.listener()
+    async def on_verify_games(self):
+        t1 = perf_counter()
+        res = await self.bot.api.get_games()
+
+        game_list = res['json']
+        t2 = perf_counter()
+        print("Verify Games: ", t2-t1)
+        
+
     @commands.Cog.listener()
     async def on_populate_db(self):
-        async with self.bot.api as api:
-            res = await api.get_all_users()
+        t1 = perf_counter()
+        res = await self.bot.api.get_all_users()
 
-            if not res['success']:
-                raise RuntimeError("Error retrieving users (on_populate_db)")
+        if not res['success']:
+            raise RuntimeError("Error retrieving users (on_populate_db)")
+        
+        all_users = res['json']['users']
+        db_uids = {user['uid'] for user in all_users}
+        dict_users = {user['uid']: user for user in all_users}
+
+        for member in self.bot.guild.members:
+            if member.bot:
+                continue
             
-            all_users = res['json']['users']
-            db_uids = {user['uid'] for user in all_users}
-            dict_users = {user['uid']: user for user in all_users}
+            #Create new
+            if member.id not in db_uids:
+                res = await api.add_user(member.id, member.name, member.display_name)
 
-            for member in self.bot.guild.members:
-                if member.bot:
-                    continue
+                if not res['success']:
+                    raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
                 
-                #Create new
-                if member.id not in db_uids:
-                    res = await api.add_user(member.id, member.name, member.display_name)
+                self.bot.dispatch('log', f'api: Created user {member.name}')
+            
+            #Update
+            if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
+                res = await api.update_user(member.id, member.name, member.display_name)
 
-                    if not res['success']:
-                        raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
-                    
-                    self.bot.dispatch('log', f'api: Created user {member.name}')
+                if not res['success']:
+                    raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
                 
-                #Update
-                if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
-                    res = await api.update_user(member.id, member.name, member.display_name)
-
-                    if not res['success']:
-                        raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
-                    
-                    self.bot.dispatch('log', f'api: Updated user {member.name}')
+                self.bot.dispatch('log', f'api: Updated user {member.name}')
+            
+        t2 = perf_counter()
+        print('Populate DB: ', t2-t1)
 
 
 #########################

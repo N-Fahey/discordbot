@@ -152,8 +152,7 @@ class CmdShell(cmd.Cmd):
         if len(arg_list) == 1 and arg_list[0] in options:
 
             if arg_list[0] == 'bank':
-                async with self.bot.api as api:
-                    res = await api.get_balances(0)
+                await self.bot.api.get_balances(0)
                 
                 balances = res['json']['balances']
 
@@ -188,14 +187,12 @@ class CmdShell(cmd.Cmd):
             sql_cog = self.bot.get_cog('sql')
             if 0 <= arg_list[1] < len(self.bank):
                 if arg_list[0] == 'pay':
-                    async with self.bot.api as api:
-                        res = api.bank_deposit(self.bank[arg_list[1]]['member'].id,arg_list[2])
+                    res = await self.bot.api.bank_deposit(self.bank[arg_list[1]]['member'].id,arg_list[2])
 
                     print(f"Successfully paid {arg_list[2]} to user {self.bank[arg_list[1]]['member'].name}.")
                  
                 elif arg_list[0] == 'withdraw':
-                    async with self.bot.api as api:
-                        result = await api.try_withdraw(self.bank[arg_list[1]]['member'].id, arg_list[2])
+                    result = await self.bot.api.try_withdraw(self.bank[arg_list[1]]['member'].id, arg_list[2])
 
                     if not result:
                         print(f"Can't withdraw {arg_list[2]} from user {self.bank[arg_list[1]]['member'].name}. Balance too low")
