@@ -70,7 +70,6 @@ async def on_ready():
 
     self.guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
     self.dispatch('populate_db')
-    #TODO: Verify games are in db / add (dispatch to something on api.py) (from prettyGames / extensions)
     self.dispatch('verify_games')
     self.dispatch("log",f"{self.user} now ready on guild: {self.guild.name}, guild ID: {self.guild.id}")
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
@@ -93,6 +92,9 @@ async def on_reload(ctx):
     print(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
     if ctx is not None:
         await ctx.send(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
+
+    self.dispatch('populate_db')
+    self.dispatch('verify_games')
 
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 

@@ -175,10 +175,17 @@ class events(commands.Cog):
     #Logging
     @commands.Cog.listener()
     async def on_log(self,msg):
-        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} INFO {msg}")
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  INFO  {msg}")
         with open("general.log","a", encoding="utf-8") as logfile:
-            logfile.write(f"{datetime.datetime.now()} - {msg}\n")
-    
+            logfile.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  INFO  {msg}\n")
+
+    #Error Log
+    @commands.Cog.listener()
+    async def on_error(self,msg):
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  ERROR  {msg}")
+        with open("error.log","a", encoding="utf-8") as logfile:
+            logfile.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  ERROR  {msg}\n")
+
     @commands.Cog.listener()
     async def on_vc_disconnect(self):
         if self.bot.vc:

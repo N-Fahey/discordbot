@@ -11,12 +11,13 @@ from time import perf_counter
 #########################
 
 class APIWrapper:
-    def __init__(self):
+    def __init__(self, bot):
         load_dotenv()
         self._base_url = os.getenv('BOT_API_URL')
         self.__headers = {
             'X-API-KEY': os.getenv('BOT_API_KEY')
         }
+        self.bot = bot
         self.session = None
 
     async def setup(self):
@@ -28,24 +29,30 @@ class APIWrapper:
             await self.session.close()
 
     async def _get(self, endpoint:str, params:dict | None = None) -> dict:
+        req_start = perf_counter()
         async with self.session.get(url=endpoint, params=params) as resp:
             if not resp.ok:
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ERROR api: GET {endpoint} {resp.status}. Params: {params}")
+                self.bot.dispatch('error', f'api: GET {endpoint} {resp.status}. Params: {params}')
 
             json = await resp.json()
             
+            req_end = perf_counter()
+            self.bot.dispatch('log', f'api: GET {endpoint} {resp.status} {(req_end - req_start)*1000:.0f}ms. Params: {params}')
             return {
                 'success': resp.ok,
                 'json': json
             }
 
     async def _post(self, endpoint:str, data:dict | None = None) -> dict:
+        req_start = perf_counter()
         async with self.session.post(url=endpoint, json=data) as resp:
             if not resp.ok:
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ERROR api: POST {endpoint} {resp.status}. Data: {data}")
+                self.bot.dispatch('error', f'api: POST {endpoint} {resp.status}. Data: {data}')
             
             json = await resp.json()
             
+            req_end = perf_counter()
+            self.bot.dispatch('log', f'api: POST {endpoint} {resp.status} {(req_end - req_start)*1000:.0f}ms. Data: {data}')
             return {
                 'success': resp.ok,
                 'json': json
@@ -148,16 +155,16 @@ class APIWrapper:
         return await self._post('bank/deposit', data=json)
     
     async def _bank_withdraw(self, uid:int, amount:int):
-        params = {
+        json = {
             'uid': uid,
             'amount': amount
         }
         
-        return await self._get('bank/withdraw', params=params)
+        return await self._post('bank/withdraw', data=json)
 
     async def try_withdraw(self, uid:int, amount:int):
         res = await self.get_balance(uid)
-        balance = res['balance']
+        balance = res['json']['balance']
 
         if balance < amount:
             return False
@@ -242,7 +249,7 @@ class APIWrapper:
 class api(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-        self.bot.api = APIWrapper()
+        self.bot.api = APIWrapper(self.bot)
 
     async def cog_load(self):
         await self.bot.api.setup()
@@ -256,17 +263,18 @@ class api(commands.Cog):
     
     @commands.Cog.listener()
     async def on_verify_games(self):
-        t1 = perf_counter()
         res = await self.bot.api.get_games()
 
-        game_list = res['json']
-        t2 = perf_counter()
-        print("Verify Games: ", t2-t1)
+        game_list = res['json']['games']
+        game_names = {game['name'] for game in game_list}
+
+        for game in self.bot.prettyGames.keys():
+            if game not in game_names:
+                await self.bot.api.add_game(game)
         
 
     @commands.Cog.listener()
     async def on_populate_db(self):
-        t1 = perf_counter()
         res = await self.bot.api.get_all_users()
 
         if not res['success']:
@@ -297,9 +305,6 @@ class api(commands.Cog):
                     raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
                 
                 self.bot.dispatch('log', f'api: Updated user {member.name}')
-            
-        t2 = perf_counter()
-        print('Populate DB: ', t2-t1)
 
 
 #########################
