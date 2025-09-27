@@ -295,8 +295,6 @@ class api(commands.Cog):
                 if not res['success']:
                     raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
                 
-                self.bot.dispatch('log', f'api: Created user {member.name}')
-            
             #Update
             if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
                 res = await api.update_user(member.id, member.name, member.display_name)
@@ -304,8 +302,6 @@ class api(commands.Cog):
                 if not res['success']:
                     raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
                 
-                self.bot.dispatch('log', f'api: Updated user {member.name}')
-
 
 #########################
 #      FINAL SETUP      #
