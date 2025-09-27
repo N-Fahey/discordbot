@@ -9,6 +9,7 @@
 
 #ignore pycache
 __pycache__/
+.vscode/
 
 # sql database ignore
 *.db
