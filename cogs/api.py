@@ -11,7 +11,7 @@ from time import perf_counter
 #########################
 
 class APIWrapper:
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         load_dotenv()
         self._base_url = os.getenv('BOT_API_URL')
         self.__headers = {

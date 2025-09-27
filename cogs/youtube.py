@@ -26,7 +26,7 @@ class DashcamFile():
             #Create json file
             with self._path.open('w') as dc_file:                
                 json.dump(dc_dict, dc_file, indent=4)                
-                print('Youtube: Created dashcam file')
+                ('Youtube: Created dashcam file')
         
         #Load file contents as attr
         self._json = self._read_file()

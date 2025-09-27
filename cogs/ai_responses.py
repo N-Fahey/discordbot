@@ -79,7 +79,6 @@ class ai_responses(commands.Cog):
                 conversation_id = message.id
             
             ai_messages.append({"role":"user", "content":prompt})
-            print(ai_messages)
             #Create the response
             response = openai.chat.completions.create(
                 model=model,
