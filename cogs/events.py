@@ -62,7 +62,11 @@ class events(commands.Cog):
     async def on_member_join(self,member):
         if member.bot:
             return
-        self.bot.dispatch("queryAddMember",member.id,member.name,member.display_name)
+        
+        res = await self.bot.api.add_user(member.id, member.name, member.display_name)
+
+        if not res['success']:
+            raise RuntimeError(f"Error adding user (on_member_join): {member.name}, uid: {member.id}")
 
     #Update member info, just use AddMember as it handles duplicates fine. This just updates display_name
     @commands.Cog.listener()
@@ -70,7 +74,7 @@ class events(commands.Cog):
         if before.bot:
             return
         if before.display_name != after.display_name:
-            self.bot.dispatch("queryAddMember",after.id,after.name,after.display_name)
+            await self.bot.api.update_user(after.id, display_name=after.display_name)
 
     #Update user info, same as above but will also see changes to username
     @commands.Cog.listener()
@@ -78,7 +82,7 @@ class events(commands.Cog):
         if before.bot:
             return
         if before.name != after.name:
-            self.bot.dispatch("queryAddMember",after.id,after.name,after.display_name)
+            await self.bot.api.update_user(after.id, username=after.name)
     
     #Fishy Reaction Matching
     @commands.Cog.listener()
@@ -171,20 +175,17 @@ class events(commands.Cog):
     #Logging
     @commands.Cog.listener()
     async def on_log(self,msg):
-        print(f"{datetime.datetime.now()} - {msg}")
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  INFO  {msg}")
         with open("general.log","a", encoding="utf-8") as logfile:
-            logfile.write(f"{datetime.datetime.now()} - {msg}\n")
+            logfile.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  INFO  {msg}\n")
 
-    #Error handling
+    #Error Log
     @commands.Cog.listener()
-    async def on_error(self, event, *args, **kwargs):
-        with open("error.log","a") as logfile:
-            if event == "on_message":
-                logfile.write(f"{datetime.datetime.now()} - Event: on_message - {args[0]}\n")
-                raise
-            else:
-                raise
-    
+    async def on_error(self,msg):
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  ERROR  {msg}")
+        with open("error.log","a", encoding="utf-8") as logfile:
+            logfile.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  ERROR  {msg}\n")
+
     @commands.Cog.listener()
     async def on_vc_disconnect(self):
         if self.bot.vc:

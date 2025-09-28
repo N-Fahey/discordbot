@@ -1,5 +1,6 @@
 import os
 import discord
+import yaml
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -38,6 +39,12 @@ self.vc = None
 self.ai_key = OPENAI_KEY
 self.loaded_cogs = []
 
+#Get settings
+async def load_settings():
+    with open("settings.yaml", "r") as f:
+        settings = yaml.safe_load(f)
+        return settings
+
 #load extensions
 async def load_extensions():    
     for file in os.listdir("./cogs"):
@@ -52,17 +59,18 @@ async def on_ready():
     self.emojiDict = {e.name:str(e) for e in self.emojis}
 
     #Load settings
-    sqlCog = self.get_cog('sql')
-    settings = await sqlCog.queryRetrieveSettings()
-    await sqlCog.on_populatedb()
+    settings = await load_settings()
+
     if isinstance(settings,dict):
         for setting in settings:
             setattr(self,setting,settings[setting])
-        self.dispatch("log",f"Succesfully loaded settings: {settings.keys()}")
+        self.dispatch("log",f"Succesfully loaded settings: {', '.join(settings.keys())}")
     else:
-        raise ConnectionError(f"Failed to load settings: {settings}")
+        raise ValueError(f"Failed to load settings: {settings}")
 
     self.guild = discord.utils.find(lambda g: g.id == int(GUILD), self.guilds)
+    self.dispatch('populate_db')
+    self.dispatch('verify_games')
     self.dispatch("log",f"{self.user} now ready on guild: {self.guild.name}, guild ID: {self.guild.id}")
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
@@ -84,6 +92,9 @@ async def on_reload(ctx):
     print(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
     if ctx is not None:
         await ctx.send(f"Reloaded extensions: {', '.join(self.loaded_cogs)}")
+
+    self.dispatch('populate_db')
+    self.dispatch('verify_games')
 
     self.console_listener = self.loop.create_task(self.get_cog('console_shell').console_handler())
 
