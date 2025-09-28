@@ -290,14 +290,14 @@ class api(commands.Cog):
             
             #Create new
             if member.id not in db_uids:
-                res = await api.add_user(member.id, member.name, member.display_name)
+                res = await self.bot.api.add_user(member.id, member.name, member.display_name)
 
                 if not res['success']:
                     raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
                 
             #Update
             if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
-                res = await api.update_user(member.id, member.name, member.display_name)
+                res = await self.bot.api.update_user(member.id, member.name, member.display_name)
 
                 if not res['success']:
                     raise RuntimeError(f"Error updating user (on_populate_db): {member.name}, uid: {member.id}")
