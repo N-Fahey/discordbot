@@ -210,7 +210,7 @@ class slots_sp_game(commands.Cog):
             return
         
         member_lobby.game.pot = member_lobby.pot[ctx.author]
-        member_lobby.pot[ctx.author] = 0
+        member_lobby.pot = None
         member_lobby.game.update_bet_options()
         self.bot.dispatch("create_slots_message",ctx)
     

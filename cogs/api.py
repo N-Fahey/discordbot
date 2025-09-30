@@ -33,6 +33,7 @@ class APIWrapper:
         async with self.session.get(url=endpoint, params=params) as resp:
             if not resp.ok:
                 self.bot.dispatch('error', f'api: GET {endpoint} {resp.status}. Params: {params}')
+                return
 
             json = await resp.json()
             
@@ -48,6 +49,7 @@ class APIWrapper:
         async with self.session.post(url=endpoint, json=data) as resp:
             if not resp.ok:
                 self.bot.dispatch('error', f'api: POST {endpoint} {resp.status}. Data: {data}')
+                return
             
             json = await resp.json()
             
@@ -264,9 +266,10 @@ class api(commands.Cog):
     @commands.Cog.listener()
     async def on_verify_games(self):
         res = await self.bot.api.get_games()
-
-        game_list = res['json']['games']
+        
+        game_list = res['json']['games'] if res['success'] else []
         game_names = {game['name'] for game in game_list}
+        
 
         for game in self.bot.prettyGames.keys():
             if game not in game_names:
@@ -294,6 +297,8 @@ class api(commands.Cog):
 
                 if not res['success']:
                     raise RuntimeError(f"Error adding user (on_populate_db): {member.name}, uid: {member.id}")
+                
+                continue
                 
             #Update
             if dict_users[member.id]['username'] != member.name or dict_users[member.id]['display_name'] != member.display_name:
