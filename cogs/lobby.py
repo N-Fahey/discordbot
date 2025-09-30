@@ -101,7 +101,7 @@ class lobby(commands.Cog):
             await lobby.message.edit(embed=self.get_lobby_embed_message(lobby,closed=True))
         if hasattr(lobby,'thread'):
             await lobby.thread.edit(archived=True,name=lobby.thread.name+' [CLOSED]',locked=True)
-        lobby.timer.clear()
+        lobby.timer.cancel()
         self.bot.game_lobbies.remove(lobby)
 
     def get_lobby_embed_message(self,lobby, closed=False):
@@ -129,10 +129,11 @@ class lobby(commands.Cog):
 
     def round_timer_reset(self,player,lobby,channel):
         if lobby.pot is not None:
-            round_time = self.bot.round_timers[lobby.game_type]
-            timer = lobby.timer
-            timer.clear()
-            timer.create_timer("timer_warning",round_time - self.bot.round_timers['seconds_warning'],[player,lobby,channel])
+            if lobby.timer:
+                lobby.timer.cancel()
+            round_time_seconds = self.bot.round_timers[lobby.game_type]
+            warning_time_seconds = self.bot.round_timers['seconds_warning']
+            lobby.timer = self.bot.loop.call_later(round_time_seconds - warning_time_seconds, lambda: self.bot.dispatch('timer_warning', player, lobby, channel))
 
     #########################
     #        COMMANDS       #
@@ -237,8 +238,7 @@ class lobby(commands.Cog):
                 bet = 0
             
             lobby = Lobby(ctx.author,match[0],bet)
-            lobby.timer = timers.TimerManager(self.bot)
-            lobby.timer.create_timer("lobbytimer",self.bot.lobbyTimeout,[lobby])
+            lobby.timer = self.bot.loop.call_later(self.bot.lobbyTimeout, lambda: self.bot.dispatch('lobbytimer', lobby))
             self.bot.game_lobbies.append(lobby)
             if lobby.game_type.endswith('_sp'):
                 lobby.message = None
@@ -283,7 +283,7 @@ class lobby(commands.Cog):
 
         member_lobby.game = game_cog.get_game_class(member_lobby.lobby_players)
         member_lobby.in_game = True
-        member_lobby.timer.clear()
+        member_lobby.timer.cancel()
         if member_lobby.message is not None:
             await member_lobby.message.edit(embed=self.get_lobby_embed_message(member_lobby)) 
         self.bot.dispatch("log",f"{member_lobby.game_type}: game started by {ctx.author} with players:{','.join(i.name for i in member_lobby.lobby_players[1:])}")
@@ -352,24 +352,23 @@ class lobby(commands.Cog):
 
     @commands.Cog.listener()
     async def on_timer_warning(self,player,lobby,channel):
-        timer = lobby.timer
-        timer.clear()
-        timer.create_timer("timer_boot",self.bot.round_timers['seconds_warning'],[player,lobby,channel])
+        lobby.timer.cancel()
+        lobby.timer = self.bot.loop.call_later(self.bot.round_timers['seconds_warning'], lambda: self.bot.dispatch('timer_boot', player, lobby, channel))
         self.bot.dispatch("sendReply",channel,f"{player.mention}, you have {self.bot.round_timers['seconds_warning']} seconds left to end your round before being disqualified.")
 
     @commands.Cog.listener()
     async def on_timer_boot(self,player,lobby,channel):
-        timer = lobby.timer
-        timer.clear()
+        lobby.timer.cancel()
         game_cog = self.bot.get_cog(lobby.game_type+"_game")
         self.bot.dispatch("log",f"lobby: {player.name} removed from {lobby.lobby_owner.name}'s {lobby.game_type}")
         await game_cog.on_timer_dq(player,lobby,channel)
 
     @commands.Cog.listener()
-    async def on_lobbytimer(self,member_lobby):
-        self.bot.dispatch("log",f"lobby: {member_lobby.game_type} lobby timed out.")
-        self.bot.dispatch("sendReply",member_lobby.message.channel,f"{member_lobby.lobby_owner.mention}'s {self.bot.prettyGames[member_lobby.game_type]} lobby timed out.")
-        await self.lobby_end_game(member_lobby,None)
+    async def on_lobbytimer(self,lobby):
+        lobby.timer.cancel()
+        self.bot.dispatch("log",f"lobby: {lobby.game_type} lobby timed out.")
+        self.bot.dispatch("sendReply",lobby.message.channel,f"{lobby.lobby_owner.mention}'s {self.bot.prettyGames[lobby.game_type]} lobby timed out.")
+        await self.lobby_end_game(lobby,None)
 
     #########################
     #    COMMAND ERRORS     #
