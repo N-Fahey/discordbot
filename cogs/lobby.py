@@ -1,4 +1,4 @@
-from discord.ext import commands,timers
+from discord.ext import commands
 from discord import Embed,Member,Thread
 
 #########################
