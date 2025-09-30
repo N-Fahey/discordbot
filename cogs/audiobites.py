@@ -1,6 +1,9 @@
+import time
+import os
+
 from discord.ext import commands
 from discord import FFmpegPCMAudio
-import time,os
+
 #########################
 #       Extension       #
 #########################

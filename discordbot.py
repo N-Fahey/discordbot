@@ -1,10 +1,10 @@
 import os
-import discord
 import yaml
+from asyncio import run
 
+import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from asyncio import run
 
 #Get required environment variables
 load_dotenv()

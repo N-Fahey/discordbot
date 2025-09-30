@@ -1,6 +1,6 @@
-from discord.ext import commands
-from discord import Embed
 from random import randint
+
+from discord.ext import commands
 
 #########################
 #       Extension       #
