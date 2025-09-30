@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 import os
 import json
 
@@ -59,39 +59,6 @@ class DashcamFile():
 #       Functions       #
 #########################
 
-async def process_dashcam_update(dashcam_file:DashcamFile):
-    load_dotenv()
-    APIKEY = os.getenv("GOOGLE_API_KEY")
-    # ID for the 'all uploads' playlist of DCOA channel
-    PLAYLISTID = 'UUvfqpaehdaqtkXPNhvJRyGA'
-
-    #Get most recent video id
-    req = requests.get(f"https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=1&playlistId={PLAYLISTID}&key={APIKEY}")
-    response = str(req.json()['items'][0]['contentDetails']['videoId'])
-    latest_link = "https://youtu.be/" + response
-    
-    dc_json = dashcam_file.read()
-    old_latest = dc_json['latest']
-
-    if old_latest == latest_link:
-        return {'updated': False}
-    
-    #Search video title only if changed
-    search_request = requests.get(f"https://youtube.googleapis.com/youtube/v3/videos?part=snippet&id={response}&key={APIKEY}")
-    latest_title = str(search_request.json()['items'][0]['snippet']['title'])
-
-    is_compilation = "compilation" in latest_title.lower()
-
-    dashcam_file.update_file(latest_link, compilation=is_compilation)
-
-    return {
-        'updated': True,
-        'video': {
-            'is_compilation': is_compilation,
-            'link': latest_link
-        }
-    }
-
 #########################
 #       Extension       #
 #########################
@@ -103,13 +70,60 @@ class youtube(commands.Cog):
         self.bot = bot
         self.bot.dashcam_file = DashcamFile(DASHCAM_FILEPATH)
         self.checker.start()
+        self._session = None
     
-    def cog_unload(self):
+    async def cog_load(self):
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+
+    async def cog_unload(self):
         self.checker.cancel()
+        if self._session and not self._session.closed:
+            await self._session.close()
+    
+    async def process_dashcam_update(self, dashcam_file:DashcamFile):
+        load_dotenv()
+        APIKEY = os.getenv("GOOGLE_API_KEY")
+        # ID for the 'all uploads' playlist of DCOA channel
+        PLAYLISTID = 'UUvfqpaehdaqtkXPNhvJRyGA'
+
+        #Get most recent video id
+        #req = requests.get(f"https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=1&playlistId={PLAYLISTID}&key={APIKEY}")
+
+        async with self._session.get(f"https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=1&playlistId={PLAYLISTID}&key={APIKEY}") as resp:
+            response_json = await resp.json()
+
+        video_id = str(response_json['items'][0]['contentDetails']['videoId'])
+        latest_link = "https://youtu.be/" + video_id
+        
+        dc_json = dashcam_file.read()
+        old_latest = dc_json['latest']
+
+        if old_latest == latest_link:
+            return {'updated': False}
+        
+        #Search video title only if changed
+        #search_request = requests.get(f"https://youtube.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={APIKEY}")
+        async with self._session.get(f"https://youtube.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={APIKEY}") as resp:
+            response_json = await resp.json()
+
+        latest_title = str(response_json['items'][0]['snippet']['title'])
+
+        is_compilation = "compilation" in latest_title.lower()
+
+        dashcam_file.update_file(latest_link, compilation=is_compilation)
+
+        return {
+            'updated': True,
+            'video': {
+                'is_compilation': is_compilation,
+                'link': latest_link
+            }
+        }
 
     @tasks.loop(minutes=5)
     async def checker(self):
-        dashcam_update = await process_dashcam_update(self.bot.dashcam_file)
+        dashcam_update = await self.process_dashcam_update(self.bot.dashcam_file)
         if not dashcam_update['updated']:
             self.bot.dispatch("log","youtube: Checked for update. No change.")
             return

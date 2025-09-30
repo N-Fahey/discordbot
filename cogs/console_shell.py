@@ -1,4 +1,6 @@
-import cmd,re
+import cmd
+import re
+
 from aioconsole import ainput
 from discord.ext import commands
 from discord import TextChannel
