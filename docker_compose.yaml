@@ -1,0 +1,9 @@
+services:
+  discordbot:
+    container_name: discordbot
+    hostname: discordbot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: "docker.env"
+    restart: unless-stopped
