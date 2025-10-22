@@ -94,6 +94,7 @@ class Slots:
         self.wins = 0 #Only used for testing
         self.big_wins = 0 #Only used for testing
         self.jackpots = 0 #Only used for testing
+        self.history = []
     
     def pull(self,player,bet_index):
         if player != self.player:
@@ -110,6 +111,10 @@ class Slots:
         result_multiple, outcome = self.check_win(spin)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
+
+        self.history.append(spin)
+        if len(self.history) > 10:
+            self.history.pop(0)
 
         winnings = int(result_multiple * this_bet) if result_multiple is not None else 0
         if winnings:
@@ -232,6 +237,11 @@ class slots_sp_game(commands.Cog):
         embed.add_field(name="Game Ended",value="Thanks for playing!")
         if member_lobby.game.pot > 0:
             embed.add_field(name="Payout",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
+        history_string = ""
+        for game in member_lobby.game.history:
+            game_str = "".join([self.bot.emojiDict[f"slot_{spin}"] for spin in game])
+            history_string += game_str + "\n"
+        embed.add_field(name="Game History",value=history_string)
         await member_lobby.game.msg.edit(embed=embed,view=None)
 
     @commands.Cog.listener()
