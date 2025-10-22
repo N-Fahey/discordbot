@@ -14,8 +14,8 @@ __pycache__/
 # sql database ignore
 *.db
 
-#yaml ignore
-*.yaml
+#Settings
+settings.yaml
 
 #screen log
 *.0
