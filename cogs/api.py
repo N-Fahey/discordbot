@@ -34,7 +34,7 @@ class APIWrapper:
         async with self.session.get(url=endpoint, params=params) as resp:
             if not resp.ok:
                 self.bot.dispatch('error', f'api: GET {endpoint} {resp.status}. Params: {params}')
-                return
+                return {'success': resp.ok}
 
             json = await resp.json()
             
@@ -50,7 +50,7 @@ class APIWrapper:
         async with self.session.post(url=endpoint, json=data) as resp:
             if not resp.ok:
                 self.bot.dispatch('error', f'api: POST {endpoint} {resp.status}. Data: {data}')
-                return
+                return {'success': resp.ok}
             
             json = await resp.json()
             
