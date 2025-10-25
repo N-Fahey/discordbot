@@ -85,15 +85,18 @@ class Slots:
     def __init__(self,players):
         self.player = players[0]
         self.pot = 0
+        self.starting_pot = 0
         self.update_bet_options()
         self.msg = None
         self.spinning = False
         self.spins = 0
         self.won = 0
-        self.max_pot = 0 #Only used for testing
-        self.wins = 0 #Only used for testing
-        self.big_wins = 0 #Only used for testing
-        self.jackpots = 0 #Only used for testing
+        self.history = []
+
+    def _update_history(self, result):
+        self.history.append(result)
+        if len(self.history) > 10:
+            self.history.pop(0)
     
     def pull(self,player,bet_index):
         if player != self.player:
@@ -115,11 +118,9 @@ class Slots:
         if winnings:
             self.won += winnings
             self.pot += winnings
-            self.max_pot = max(self.pot, self.max_pot)
 
         self.update_bet_options()
-
-        return {
+        result = {
             "spin":spin,
             "bet":this_bet,
             "winnings":winnings,
@@ -127,6 +128,8 @@ class Slots:
             "pot":self.pot,
             "options":self.bet_options
         }
+        self._update_history(result)
+        return result
     
     def get_spin(self):
         spin = tuple(randint(1,8) for _ in range(3))
@@ -159,7 +162,6 @@ class Slots:
         }
 
         if spin_sorted in big_win_options:
-            self.big_wins += 1
             return big_win_options[spin_sorted]
 
         #Any triple
@@ -211,6 +213,7 @@ class slots_sp_game(commands.Cog):
             return
         
         member_lobby.game.pot = member_lobby.pot[ctx.author]
+        member_lobby.game.starting_pot = member_lobby.pot[ctx.author]
         member_lobby.pot = None
         member_lobby.game.update_bet_options()
         self.bot.dispatch("create_slots_message",ctx)
@@ -230,8 +233,17 @@ class slots_sp_game(commands.Cog):
         embed = Embed(title=f"🤑🎰💰{user.display_name}'s Slots!💰🎰🤑")
         embed.set_thumbnail(url=user.avatar.url)
         embed.add_field(name="Game Ended",value="Thanks for playing!")
+        embed.add_field(name="Initial Pot", value=f"{self.bot.currencyCode}{member_lobby.game.starting_pot}")
         if member_lobby.game.pot > 0:
             embed.add_field(name="Payout",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
+    
+        history_strings = [
+            f"{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry['spin']])} - 🤑 You won {self.bot.currencyCode}{history_entry['winnings']} with 💸{history_entry['outcome']}💸!! Pot: {self.bot.currencyCode}{history_entry['pot']}"
+            if history_entry['outcome']
+            else f"{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry['spin']])} - 😢 You lost {self.bot.currencyCode}{history_entry['bet']}. Pot: {self.bot.currencyCode}{history_entry['pot']}"
+            for history_entry in member_lobby.game.history
+        ]
+        embed.add_field(name="Game History",value='\n'.join(history_strings), inline=False)
         await member_lobby.game.msg.edit(embed=embed,view=None)
 
     @commands.Cog.listener()
@@ -274,6 +286,8 @@ class slots_sp_game(commands.Cog):
             embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.",inline=False)
             embed.add_field(name="🎰Your Spin!🎰",value=" ".join(disp_msg),inline=False)
             await member_lobby.game.msg.edit(embed=embed)
+
+        result_string = f"🤑You won {self.bot.currencyCode}{result['winnings']} with 💸⭐{result['outcome']}⭐💸!! 🤑"
         
         if result['pot'] == 0:
             await asyncio.sleep(0.5)
@@ -282,7 +296,8 @@ class slots_sp_game(commands.Cog):
             return
 
         if result['outcome'] != "":
-            embed.add_field(name="You Won!",value=f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑",inline=False)
+            embed.add_field(name="You Won!",value=result_string,inline=False)
+        
         embed.add_field(name="Pot",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
         embed.add_field(name="Spins",value=member_lobby.game.spins)
         if member_lobby.game.won > 0:
