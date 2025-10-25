@@ -282,6 +282,12 @@ class slots_sp_game(commands.Cog):
             embed.add_field(name="Instructions",value="Select one of the bet options below to place a bet and pull the handle! Choose the 🏧 option to withdraw your pot.",inline=False)
             embed.add_field(name="🎰Your Spin!🎰",value=" ".join(disp_msg),inline=False)
             await member_lobby.game.msg.edit(embed=embed)
+
+        result_string = f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑" if result['outcome'] else "Womp womp"
+
+        self.history.append((result['spin'], result_string))
+        if len(self.history) > 10:
+            self.history.pop(0)
         
         if result['pot'] == 0:
             await asyncio.sleep(0.5)
@@ -290,14 +296,7 @@ class slots_sp_game(commands.Cog):
             return
 
         if result['outcome'] != "":
-            result_string = f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑"
             embed.add_field(name="You Won!",value=result_string,inline=False)
-        else:
-            result_string = f"Womp womp"
-
-        self.history.append((result['spin'], result_string))
-        if len(self.history) > 10:
-            self.history.pop(0)
         
         embed.add_field(name="Pot",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
         embed.add_field(name="Spins",value=member_lobby.game.spins)
