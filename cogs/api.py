@@ -132,14 +132,17 @@ class APIWrapper:
             }
         
         res = await self._get_dole_timestamp(uid)
-        last_dole = datetime.strptime(res['json']['last_dole'], '%Y-%m-%dT%H:%M:%S')
 
-        if datetime.now().date() - last_dole.date() < timedelta(days=1):
-            return {
-                'success': False,
-                'reason': 'time',
-                'delta': datetime.now() - last_dole
-            }
+        dole_res = res['json'].get('last_dole')
+        if dole_res:
+            last_dole = datetime.strptime(dole_res, '%Y-%m-%dT%H:%M:%S')
+
+            if datetime.now().date() - last_dole.date() < timedelta(days=1):
+                return {
+                    'success': False,
+                    'reason': 'time',
+                    'delta': datetime.now() - last_dole
+                }
         
         result = await self.bank_deposit(uid, dole_amount)
         await self._update_dole_timestamp(uid)
