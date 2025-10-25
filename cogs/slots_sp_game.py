@@ -94,7 +94,6 @@ class Slots:
         self.wins = 0 #Only used for testing
         self.big_wins = 0 #Only used for testing
         self.jackpots = 0 #Only used for testing
-        self.history = []
     
     def pull(self,player,bet_index):
         if player != self.player:
@@ -111,10 +110,6 @@ class Slots:
         result_multiple, outcome = self.check_win(spin)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
-
-        self.history.append(spin)
-        if len(self.history) > 10:
-            self.history.pop(0)
 
         winnings = int(result_multiple * this_bet) if result_multiple is not None else 0
         if winnings:
@@ -186,6 +181,7 @@ class Slots:
 class slots_sp_game(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
+        self.history = []
 
     def get_game_class(self,players):
         return Slots(players)
@@ -237,11 +233,13 @@ class slots_sp_game(commands.Cog):
         embed.add_field(name="Game Ended",value="Thanks for playing!")
         if member_lobby.game.pot > 0:
             embed.add_field(name="Payout",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
+
         history_string = ""
-        for game in member_lobby.game.history:
-            game_str = "".join([self.bot.emojiDict[f"slot_{spin}"] for spin in game])
-            history_string += game_str + "\n"
-        embed.add_field(name="Game History",value=history_string)
+        for spin, result_str in self.history:
+            game_str = "".join([self.bot.emojiDict[f"slot_{res}"] for res in spin])
+            history_string += f"{game_str} - {result_str}\n"
+        embed.add_field(name="Game History",value=history_string, inline=False)
+        
         await member_lobby.game.msg.edit(embed=embed,view=None)
 
     @commands.Cog.listener()
@@ -292,7 +290,15 @@ class slots_sp_game(commands.Cog):
             return
 
         if result['outcome'] != "":
-            embed.add_field(name="You Won!",value=f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑",inline=False)
+            result_string = f"🤑You spun 💸⭐{result['outcome']}⭐💸!! You win:{self.bot.currencyCode}{result['winnings']}!!🤑"
+            embed.add_field(name="You Won!",value=result_string,inline=False)
+        else:
+            result_string = f"Womp womp"
+
+        self.history.append((result['spin'], result_string))
+        if len(self.history) > 10:
+            self.history.pop(0)
+        
         embed.add_field(name="Pot",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
         embed.add_field(name="Spins",value=member_lobby.game.spins)
         if member_lobby.game.won > 0:
