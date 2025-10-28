@@ -95,7 +95,7 @@ class Slots:
 
     def _update_history(self, result):
         self.history.append(result)
-        if len(self.history) > 10:
+        if len(self.history) > 14:
             self.history.pop(0)
     
     def pull(self,player,bet_index):
@@ -238,12 +238,20 @@ class slots_sp_game(commands.Cog):
             embed.add_field(name="Payout",value=f"{self.bot.currencyCode}{member_lobby.game.pot}")
     
         history_strings = [
-            f"{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry['spin']])} - 🤑 You won {self.bot.currencyCode}{history_entry['winnings']} with 💸{history_entry['outcome']}💸!! Pot: {self.bot.currencyCode}{history_entry['pot']}"
-            if history_entry['outcome']
-            else f"{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry['spin']])} - 😢 You lost {self.bot.currencyCode}{history_entry['bet']}. Pot: {self.bot.currencyCode}{history_entry['pot']}"
+            f'{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry["spin"]])} - 🤑 You won {self.bot.currencyCode}{history_entry["winnings"]} with 💸{history_entry["outcome"]}💸!! Pot: {self.bot.currencyCode}{history_entry["pot"]}'
+            if history_entry["outcome"]
+            else f'{"".join([self.bot.emojiDict[f"slot_{res}"] for res in history_entry["spin"]])} - 😢 You lost {self.bot.currencyCode}{history_entry["bet"]}. Pot: {self.bot.currencyCode}{history_entry["pot"]}'
             for history_entry in member_lobby.game.history
         ]
-        embed.add_field(name="Game History",value='\n'.join(history_strings), inline=False)
+        # Max embed size = 1024
+        while history_strings and len('\n'.join(history_strings)) >= 2000:
+            history_strings.pop(0)
+
+        joined_history_str_1 = '\n'.join(history_strings[:len(history_strings)//2])
+        joined_history_str_2 = '\n'.join(history_strings[len(history_strings)//2:])
+        
+        embed.add_field(name="Game History", value=joined_history_str_1, inline=False)
+        embed.add_field(name="\u200b", value=joined_history_str_2, inline=False)
         await member_lobby.game.msg.edit(embed=embed,view=None)
 
     @commands.Cog.listener()
