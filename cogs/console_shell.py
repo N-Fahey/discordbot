@@ -209,7 +209,10 @@ class CmdShell(cmd.Cmd):
     #Exec any code
     async def do_exec(self,args):
         'Exec code. Not restricted to bot. Use self.bot to refer to bot'
-        exec(args)
+        try:
+            exec(args)
+        except Exception as e:
+            print(f'Unable to execute command: {', '.join(e.args)}')
 
 class console_shell(commands.Cog):
     def __init__(self,bot):
