@@ -182,7 +182,7 @@ class Slots:
             
             # Best spin is the biggest multiplier
             if current_spin[0] > best_spin[0]:
-                best_spin = current_spin.append(spins[i])
+                best_spin = current_spin + [spins[i]]
 
         return best_spin
 
