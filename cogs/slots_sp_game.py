@@ -98,7 +98,7 @@ class Slots:
         if len(self.history) > 18:
             self.history.pop(0)
     
-    def pull(self,player,bet_index):
+    def pull(self,player,bet_index,roll_count=1):
         if player != self.player:
             raise ValueError("Player doesn't match.")
         
@@ -109,19 +109,19 @@ class Slots:
             raise ValueError("Tried to place Slots bet without enough money")
 
         self.spins += 1
-        spin = self.get_spin()
-        result_multiple, outcome = self.check_win(spin)
+        spins = [self.get_spin() for _ in roll_count]
+        result_multiple, outcome, best_spin = self.check_win(spins)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
 
-        winnings = int(result_multiple * this_bet) if result_multiple is not None else 0
+        winnings = int(result_multiple * this_bet)
         if winnings:
             self.won += winnings
             self.pot += winnings
 
         self.update_bet_options()
         result = {
-            "spin":spin,
+            "spin":best_spin,
             "bet":this_bet,
             "winnings":winnings,
             "outcome":outcome,
@@ -150,31 +150,41 @@ class Slots:
         else:
             self.bet_options = [self.pot,50,75,100]
 
-    def check_win(self,spin:tuple):
-        spin_sorted = tuple(sorted(spin))
+    def check_win(self,spins:list[tuple]):
+        spins_sorted = [tuple(sorted(spin)) for spin in spins]
         big_win_options = { #key: spin, value: multiple, outcome text
             #Gamer girls
-            (2,3,4):(10, "A Gaggle of Gamer Girls"),
+            (2,3,4):[10, "A Gaggle of Gamer Girls"],
             #The FG Three
-            (4,5,6):(10, "The FG Three"),
+            (4,5,6):[10, "The FG Three"],
             #CJ's Jackpot
-            (1,1,1):(50, "CJ's Jackpot"),
+            (1,1,1):[50, "CJ's Jackpot"],
         }
 
-        if spin_sorted in big_win_options:
-            return big_win_options[spin_sorted]
+        best_spin = [0, "", spins[0]]
 
-        #Any triple
-        if len(set(spin_sorted)) == 1:
-            # Multiplier = 6x
-            return (6, "a triple")
+        for i, spin in enumerate(spins_sorted):
+            if spin in big_win_options:
+                current_spin  = big_win_options[spin]
+
+            #Any triple
+            if len(set(spin)) == 1:
+                # Multiplier = 6x
+                current_spin = [6, "a triple"]
+            
+            # Any double
+            if len(set(spin)) == 2:
+                current_spin = [2, "two of a kind"]
         
-        # Any double
-        if len(set(spin_sorted)) == 2:
-            return (2, "two of a kind")
-        
-        #No win
-        return (None, "")
+            #No win
+            else:
+                current_spin = [0, ""]
+            
+            # Best spin is the biggest multiplier
+            if current_spin[0] > best_spin[0]:
+                best_spin = current_spin.append(spins[i])
+
+        return best_spin
 
 #########################
 #       Extension       #
