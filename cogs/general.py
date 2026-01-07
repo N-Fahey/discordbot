@@ -1,6 +1,7 @@
 from random import randint
 
 from discord.ext import commands
+from datetime import datetime
 
 #########################
 #       Extension       #
@@ -37,6 +38,16 @@ class general(commands.Cog):
             reply = "Unrecognised emoji"
         self.bot.dispatch("log",logmsg)
         self.bot.dispatch("sendReply",ctx,reply)
+
+
+    @commands.command(name="onedaycloser",help="We're always one day closer...")
+    async def onedaycloser(self, ctx):
+
+        now = datetime.now()
+        the_day = datetime(2026, 6, 27)
+        time_to_d_day = the_day - now
+
+        self.bot.dispatch("sendReply",ctx,f"We're {time_to_d_day.days} days away...")
         
 
 
