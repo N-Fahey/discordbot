@@ -109,7 +109,7 @@ class Slots:
             raise ValueError("Tried to place Slots bet without enough money")
 
         self.spins += 1
-        spins = [self.get_spin() for _ in roll_count]
+        spins = [self.get_spin() for _ in range(roll_count)]
         result_multiple, outcome, best_spin = self.check_win(spins)
         this_bet = self.bet_options[bet_index]
         self.pot -= this_bet
