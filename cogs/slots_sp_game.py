@@ -168,12 +168,12 @@ class Slots:
                 current_spin  = big_win_options[spin]
 
             #Any triple
-            if len(set(spin)) == 1:
+            elif len(set(spin)) == 1:
                 # Multiplier = 6x
                 current_spin = [6, "a triple"]
             
             # Any double
-            if len(set(spin)) == 2:
+            elif len(set(spin)) == 2:
                 current_spin = [2, "two of a kind"]
         
             #No win
