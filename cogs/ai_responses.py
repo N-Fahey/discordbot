@@ -39,9 +39,17 @@ class ai_responses(commands.Cog):
                 return
 
             #Check moderation first
-            moderation_response = openai.moderations.create(
-                input=prompt
-            )
+            try:
+                moderation_response = openai.moderations.create(
+                    input=prompt
+                )
+            except openai.RateLimitError:
+                await message.reply("Can't help with this mate, fish ran out of Money :(")
+                return
+            except Exception:
+                await message.reply("Something went wrong :(")
+                return
+
             #If it's naughty, then stop, and log reason
             if moderation_response.results[0].flagged:
                 naughty_string = ''
@@ -79,12 +87,16 @@ class ai_responses(commands.Cog):
             
             ai_messages.append({"role":"user", "content":prompt})
             #Create the response
-            response = openai.chat.completions.create(
-                model=model,
-                #prompt=prompt,
-                messages=ai_messages,
-                temperature=0.9,
-                max_tokens=max_tokens)
+            try:
+                response = openai.chat.completions.create(
+                    model=model,
+                    #prompt=prompt,
+                    messages=ai_messages,
+                    temperature=0.9,
+                    max_tokens=max_tokens)
+            except Exception:
+                await message.reply("Something broke :(")
+                return
 
             response_text = response.choices[0].message.content.strip()[:2000]
 
@@ -113,6 +125,9 @@ class ai_responses(commands.Cog):
             self.bot.dispatch('log',
             f"OpenAI: {message.author} attempted to use image AI but was moderated on input: '{prompt}'. Error: '{e}'")
             await message.reply("I'm not responding to that")
+            return
+        except Exception:
+            await message.reply("Something went wrong :(")
             return
 
         
