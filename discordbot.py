@@ -32,7 +32,7 @@ async def get_prefix(bot,msg):
     return prefixes
 
 #Setup attributes
-self = commands.Bot(command_prefix=get_prefix, intents=intents)
+self = commands.Bot(command_prefix=get_prefix, intents=intents, case_insensitive=True)
 self.emojiDict = {}
 self.console_listener = None
 self.vc = None
