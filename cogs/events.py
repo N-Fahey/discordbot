@@ -27,6 +27,7 @@ class events(commands.Cog):
             "who":"cares?",
             "what":"ever.",
             "why":"are you still talking?",
+            "where":"is my care?",
             "when":"did I ask?",
             "how":"is my cow?",
             "bazinga":"https://i.kym-cdn.com/entries/icons/original/000/011/946/Bazinga-Sheldon-Cooper-The-Big-Bang-Theory-85831432.jpg",
@@ -59,6 +60,10 @@ class events(commands.Cog):
             await msg.reply("rip bozo")
             await asyncio.sleep(5)
             msg.author.ban(reason="shit luck better luck next time")
+        
+        #Special reacts
+        if msg.author.id == 142309150016143360 and randint(1, 4) == 1:
+            await msg.add_reaction("👲")
     
     #Add new members to db
     @commands.Cog.listener()
