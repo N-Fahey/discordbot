@@ -44,10 +44,33 @@ class general(commands.Cog):
     async def onedaycloser(self, ctx):
 
         now = datetime.now()
-        the_day = datetime(2026, 6, 27)
+        the_day = datetime(2026, 6, 18)
         time_to_d_day = the_day - now
+        days_to_d_day = time_to_d_day.days + 1
 
-        self.bot.dispatch("sendReply",ctx,f"We're {time_to_d_day.days} days away...")
+        if days_to_d_day == 0:
+            reply = "It's THE day..."
+        elif days_to_d_day <= 0:
+            reply = "The day has been and gone..."
+        else:
+            reply = f"We're {days_to_d_day} days away..."
+
+        self.bot.dispatch("sendReply",ctx,reply)
+    
+    @commands.command(name="onedayfarther", help="We're always one day farther...", aliases=["onedayfather"])
+    async def onedayfarther(self, ctx):
+        now = datetime.now()
+        the_day = datetime(2026, 6, 18)
+        time_from_d_day = now - the_day
+
+        if time_from_d_day.days == 0:
+            reply = "It's THE day..."
+        elif time_from_d_day.days <= 0:
+            reply = "The day hasn't come yet..."
+        else:
+            reply = f"We're {time_from_d_day.days} days since... (or farther, if you will)..."
+
+        self.bot.dispatch("sendReply", ctx, reply)
         
 
 
