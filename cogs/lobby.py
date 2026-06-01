@@ -225,7 +225,7 @@ class lobby(commands.Cog):
             return
 
 
-        match = [i for i in self.bot.prettyGames if game in i]
+        match = [i for i in self.bot.prettyGames if game.lower() in i]
         if len(match) == 1:
             if bet > 0:                
                 result = await self.bot.api.try_withdraw(ctx.author.id, bet)
