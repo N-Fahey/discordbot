@@ -125,7 +125,6 @@ class youtube(commands.Cog):
     async def checker(self):
         dashcam_update = await self.process_dashcam_update(self.bot.dashcam_file)
         if not dashcam_update['updated']:
-            self.bot.dispatch("log","youtube: Checked for update. No change.")
             return
         
         #There was an update - but not comp
