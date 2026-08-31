@@ -203,7 +203,8 @@ class lobby(commands.Cog):
             self.bot.dispatch("sendReply",ctx,reply)
 
     #Game starter
-    @commands.command(name="game",help="Start a game. Usage: !game {gamename} optional:{bet_amount}\nIf not bet specified, game is played without betting")
+    @commands.command(name="game",help="Start a game. Usage: !game {gamename} optional:{bet_amount}\nIf not bet specified, game is played without betting",
+                      aliases=["g"])
     async def game(self,ctx, game:str = "help", bet:int = 0):
         #Restrict lobby commands to game channel (Don't tell anyone that the game commands still work jeff)
         if ctx.channel.id != self.bot.game_channel_id:
@@ -225,7 +226,7 @@ class lobby(commands.Cog):
             return
 
 
-        match = [i for i in self.bot.prettyGames if game.lower() in i]
+        match = [i for i in self.bot.prettyGames if i.startswith(game.lower())]
         if len(match) == 1:
             if bet > 0:                
                 result = await self.bot.api.try_withdraw(ctx.author.id, bet)
